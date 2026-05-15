@@ -260,16 +260,19 @@ function scr_atr_calc_combat() //o_inv_slot 等效于 硬编码4719，但可能�
     DMG = 0;
     offDMG = 0;
     melee_damage = STR;
-    
+    var _melee_damage = 0;
+
     with (o_inv_gloves)
     {
         if (children > 0)
         {
             with (children)
-                melee_damage += 0.8 * scr_inv_param("DEF", id);
+                _melee_damage += scr_inv_param("DEF", id);
         }
     }
     
+    melee_damage += _melee_damage;
+
     if (inv_dmg == 0 || isGround == -1)
     {
         scr_enemy_damage_reset();
