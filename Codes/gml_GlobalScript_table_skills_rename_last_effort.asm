@@ -1,0 +1,1 @@
+push.s "last_effort;Последнее усилие;Final Push;战狂;Letzter Versuch;Último esfuerzo;Un dernier effort;Spinta Finale;Impulso Final;Ostateczny wysiłek;Son Çare;最後の一押し;막판 분발;"

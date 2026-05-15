@@ -1,0 +1,116 @@
+function _scr_auto_move_to_transition()
+{
+	var is_diagonal_move
+    // Convert coordinates of the map marker
+    var _x = argument0
+    var _y = argument1
+
+    // Map grid coordinates
+    var _gridX = _x div 52
+    var _gridY = _y div 52
+
+    // Offset on the target map grid
+    var _offsetX = _x - _gridX * 52
+    var _offsetY = _y - _gridY * 52
+
+    // Check if the player is in destination grid.
+    if (global.playerGridX == _gridX && global.playerGridY == _gridY)
+    {
+        // Follow the relative positions marked on the map to the corresponding point in the current room
+        _scr_move_player_to(_offsetX / 52 * room_width, _offsetY / 52 * room_height)
+        _scr_stop_auto_move()
+    }
+    else
+    {
+		
+		//region DiagonalSupport
+        global.step_diagonal_count++
+        is_diagonal_move = (global.step_diagonal_count % 2) == 0
+        var dx = (global.playerGridX < _gridX ? 1 : (global.playerGridX > _gridX ? -1 : 0))
+        var dy = (global.playerGridY < _gridY ? 1 : (global.playerGridY > _gridY ? -1 : 0))
+        var xOffset = global.playerGridX - _gridX
+        var yOffset = global.playerGridY - _gridY
+		//
+        var is_diagonal = (dx != 0 && dy != 0)
+        var is_diagonal_condition_met = (abs(xOffset) == abs(yOffset) || is_diagonal_move)
+		//
+        if (is_diagonal && is_diagonal_condition_met)
+        {
+            instance_activate_object(o_tile_transition)
+            with (o_tile_transition)
+            {
+                if (dX == dx && dY == dy)
+                {
+                    if (scr_get_path_mp(id) != -4)
+                    {
+                        _scr_move_player_to(x, y, id, scr_get_path_mp(id))
+                        return;
+                    }
+                }
+            }
+        }
+		//endregion
+		
+        // Convert map markers coordinates to room coordinates
+        var _local_x = (_gridX - global.playerGridX + _offsetX / 52) * room_width
+        var _local_y = (_gridY - global.playerGridY + _offsetY / 52) * room_height
+
+        // Find nearest map door
+        var closest_point = _scr_calculate_closest_point(_local_x, _local_y)
+
+        if (is_undefined(closest_point))
+            return
+
+        var _closest_gridX = closest_point[0] div 26
+        var _closest_gridY = closest_point[1] div 26
+
+        // Search for o_tile_transition
+        var _door_array = _scr_find_nearest_tile_transition(closest_point[0], closest_point[1])
+
+        if (array_length(_door_array) == 0)
+            _door_array = _scr_find_exit_door()
+
+        if (array_length(_door_array) != 0)
+        {
+            var _path = noone
+            var _door = noone
+            for (var i = 0; i < array_length(_door_array); i++)
+            {
+                var _door_check = _door_array[i]
+
+                // Active instance first, then we can calculate the path to it
+                var _is_inactive = false
+                with (o_cullingController)
+                    _is_inactive = ds_list_find_index(deactivatedInstancesList, _door_check) != -1
+
+                instance_activate_object(_door_check)
+
+                // Check if the door is accessible
+                var _path_check = scr_get_path_mp(_door_check)
+                if (_path_check > Path20)
+                {
+                    _path = _path_check
+                    _door = _door_check
+                    break
+                }
+                else
+                {
+                    // Deactivate the instance that is inaccessible
+                    if (_is_inactive)
+                    {
+                        instance_deactivate_object(_door_check)
+                    }
+                }
+            }
+
+            if (_path != noone && _door != noone)
+                _scr_move_player_to(_door.x, _door.y, _door, _path)
+            else
+                scr_actionsLog("doorInaccessible", [scr_id_get_name(o_player)])
+        }
+        else
+        {
+            scr_actionsLog("doorNotExist", [scr_id_get_name(o_player)])
+        }
+    }
+}

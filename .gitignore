@@ -1,0 +1,19 @@
+# Build output
+obj
+bin
+
+# Binary dependencies
+lib/
+
+# Temp & logs
+tmp/
+logs/
+catrh/
+
+# IDE & tools
+.vs/
+.claude/
+*.lscache
+
+# Generated debug code
+Codes/debug.gml
