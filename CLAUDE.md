@@ -90,21 +90,33 @@ FontLoader.LoadFonts(ModFiles);
 ```
 ModSources
 ├── QoLEnhanced/
-│   ├── QoLEnhanced.cs          # 🔴 主入口 — 所有功能的注入调度代码 (~1510行)
-│   ├── QoLEnhanced.csproj       # 项目配置
-│   ├── QoLEnhanced.slnx         # 解决方案
-│   ├── SKILL.md                 # 单功能深度文档（约娜天赋），其他功能可参照此格式
-│   ├── CLAUDE.md                # 本文件 — 项目总览与架构文档
-│   ├── Codes/                   # 🟡 注入的 GML/ASM 脚本 (66 个文件)
+│   ├── QoLEnhanced.cs               # 🔴 主入口 — 元数据 + PatchMod() 调度 (~300行)
+│   ├── QoLEnhanced.GlobalConfig.cs   # 区块1: 地牢/陷阱/初始属性/宝箱/全局初始化
+│   ├── QoLEnhanced.Enchantment.cs    # 区块2: 附魔系统
+│   ├── QoLEnhanced.TimeAndHotkeys.cs # 区块3: 时间/自动寻路/快捷键/祈祷/特效
+│   ├── QoLEnhanced.CharacterMechanics.cs # 区块4: 角色机制与开局
+│   ├── QoLEnhanced.SkillsAndCombat.cs   # 区块5: 技能/免费回合/派系魔法
+│   ├── QoLEnhanced.Consumables.cs    # 区块7: 消耗品与工具
+│   ├── QoLEnhanced.Economy.cs        # 区块8: 经济系统
+│   ├── QoLEnhanced.InventoryUI.cs    # 区块9: 背包与仓库UI
+│   ├── QoLEnhanced.Stacking.cs       # 区块10: 堆叠系统
+│   ├── QoLEnhanced.AttributeCaps.cs  # 区块11: 属性上限
+│   ├── MslExtensions.cs              # 工具类: MslExtensions + GmlInjectionExtensions
+│   ├── Localization.cs               # 本地化文本注入
+│   ├── QoLEnhanced.csproj            # 项目配置
+│   ├── QoLEnhanced.slnx              # 解决方案
+│   ├── SKILL.md                      # 单功能深度文档（约娜天赋）
+│   ├── CLAUDE.md                     # 本文件 — 项目总览与架构文档
+│   ├── Codes/                        # 🟡 注入的 GML/ASM 脚本 (66+ 个文件)
 │   │   ├── gml_GlobalScript_*.gml     # 全量替换型脚本（替换原版函数）
 │   │   ├── _scr_*.gml                 # 新增辅助函数（通过 AddFunction 注册）
 │   │   ├── gml_Object_o_*_insert.gml  # 增量注入脚本（InsertBelow）
 │   │   ├── gml_Object_o_*_instead.gml # 局部替换脚本（ReplaceBy）
 │   │   ├── *.asm                      # ASM 字节码片段（ReplaceBy 到汇编上下文）
 │   │   └── debug.gml                  # 编译后完整代码副本（调试用）
-│   ├── Sprites/                 # 🖼️ UI 贴图 (540p / 720p 两种规格)
-│   ├── lib/                     # 依赖 DLL (ModShardLauncher.dll, UndertaleModLib.dll)
-│   └── tmp/                     # 临时导出文件
+│   ├── Sprites/                      # 🖼️ UI 贴图 (540p / 720p 两种规格)
+│   ├── lib/                          # 依赖 DLL (ModShardLauncher.dll, UndertaleModLib.dll)
+│   └── tmp/                          # 临时导出文件
 └── BaseDataCode/         # 📚 原始游戏反编译脚本（位于 `ModSources\BaseDataCode\`，用于 MSL 匹配定位）
 ```
 
@@ -204,6 +216,38 @@ UMT 反编译的 GML 源码在通过 `Msl.LoadGML` 加载时，**行末分号会
 ```
 
 > `MatchAll` 匹配整个脚本的全部内容，`InsertAbove` 在所有内容之前插入，`InsertBelow` 在所有内容之后插入。
+
+#### 规则 6: 方法变量（execute 等）不能用 `self.method()` 调用
+
+游戏对象在 Create 事件中以 `execute = function(){...}` 形式赋值的方法变量，**不在 Scripts 列表中**。直接写 `self.execute(true)` 会产生栈泄漏（多余的 self 留在栈上，popz 只弹返回值）。
+
+```gml
+❌ 错误:  self.execute(true)  // 栈泄漏
+✅ 正确:
+with (o_inv_bone_cradle)
+{
+    var _fn = variable_instance_get(id, "execute");
+    method_call(_fn, [true]);
+}
+```
+
+> 字节码对照：原始 `push.v builtin.execute` 从实例变量表直接查找；`self.execute` 变成 `push.v stacktop.execute`，路径不同且产生栈泄漏。
+
+#### 规则 7: AddFunction 必须在调用方之前注册
+
+`Msl.AddFunction()` 注册的新函数必须在所有引用它的代码（`SetStringGMLInFile`、`InsertBelow` 等）**之前**执行。否则 MSL 编译器无法解析函数调用，导致运行时崩溃。
+
+#### 规则 8: `scr_skill_call_passive` 签名速查
+
+```gml
+function scr_skill_call_passive(arg0, arg1=id, arg2=-4, arg3=false, arg4="", arg5=0)
+// arg0 = 被动对象类型 (如 o_pass_skill_residual_charge)
+// arg1 = owner id
+// arg2 = target（-4 为不指定）
+// arg3 = crit_attack ← 暴击标志从这里传入
+// arg4 = 附加字符串参数
+// arg5 = 附加数值参数
+```
 
 ### 操作模式
 
@@ -329,7 +373,7 @@ Msl.AddObject("o_globalmapTP", "s_gui_button_skipturn", "o_button", true, false,
 | 在现有逻辑中插入新代码 | `LoadGML` + `InsertBelow` (模式6) |
 | 操作反汇编文本行 | `QuickInject` / `QuickReplace` / `QuickReplaceRange` (模式7) |
 
-## MslExtensions 工具类 (QoLEnhanced.cs:1237-1364)
+## MslExtensions 工具类 (MslExtensions.cs)
 
 项目内部封装了一套 MSL 操作便利方法，分为四个区块：
 
@@ -352,7 +396,7 @@ Msl.AddObject("o_globalmapTP", "s_gui_button_skipturn", "o_button", true, false,
 - `QuickAssemblyMatchBelowFiles` — 汇编级偏移+文件替换
 - `QuickInject` / `QuickReplace` / `QuickReplaceRange` — 行级注入/替换
 
-## GmlInjectionExtensions (QoLEnhanced.cs:1368-1472)
+## GmlInjectionExtensions (MslExtensions.cs)
 
 针对 `IEnumerable<string>` (反汇编文本行流) 的扩展方法：
 - `InjectIf` — 匹配行前插入
@@ -363,69 +407,68 @@ Msl.AddObject("o_globalmapTP", "s_gui_button_skipturn", "o_button", true, false,
 
 ---
 
-## 功能区块全览 (12 区块, ~50+ 项修改)
+## 功能区块全览 (10 文件, ~50+ 项修改)
 
-### 区块 1: 全局配置与游戏机制 (L99-205)
+### 区块 1: 全局配置与游戏机制 (QoLEnhanced.GlobalConfig.cs)
 
-| 功能 | 注入方式 | 涉及文件 |
-|------|---------|---------|
-| 密室 100% 出现 | QuickMatch | `scr_dungeonHasSecretRoom` |
-| 地牢光照颜色调整 | LoadGML + MatchFrom/ReplaceBy 链 | `scr_dungeonSetSettings` |
-| 陷阱发现基于 PRC 属性 | QuickMatch x3 | `scr_trap_find` |
-| 刷怪 3 倍 | LoadGML + InsertBelow | `o_mob_point_Other_11`, `scr_surfaceSpawnsDoc` |
-| 地面刷新列表强化 | SetStringGMLInFile | `table_surface_spawn.gml` |
-| 敌人属性按玩家等级缩放 | AddFunction + QuickInsertBelow | `_scr_scale_enemy_csv_by_level.gml` |
-| 经验值缩放调整 | LoadAssemblyAsString + MatchBelow/ReplaceBy | `o_enemy_Destroy_0_insert.asm` |
-| 初始 AP 0→5 | QuickMatch | `scr_characterMapInit` |
-| 初始 SP 2→5 | QuickMatch | `scr_characterMapInit` |
-| 等级上限 UI 30→100 | QuickMatch | `o_character_panel_mask_Draw_0` |
-| 敏捷额外减伤 2%/点 | LoadAssemblyAsString + ReplaceBy | `table_attributes_rebalance_agility.asm` |
-| 宝箱奖励翻倍 | QuickMatchBelow | `c_container_Other_13` |
+| 功能 | 涉及文件 |
+|------|---------|
+| 密室 100% 出现 | `scr_dungeonHasSecretRoom` |
+| 地牢光照颜色调整 | `scr_dungeonSetSettings` |
+| 陷阱发现基于 PRC 属性 | `scr_trap_find` |
+| 刷怪 3 倍 | `o_mob_point_Other_11`, `scr_surfaceSpawnsDoc` |
+| 地面刷新列表强化 | `table_surface_spawn.gml` |
+| 敌人属性按玩家等级缩放 | `_scr_scale_enemy_csv_by_level.gml` |
+| 经验值缩放调整 | `o_enemy_Destroy_0_insert.asm` |
+| 初始 AP 0→5, SP 2→5 | `scr_characterMapInit` |
+| 等级上限 UI 30→100 | `o_character_panel_mask_Draw_0` |
+| 敏捷额外减伤 2%/点 | `table_attributes_rebalance_agility.asm` |
+| 宝箱奖励翻倍 | `c_container_Other_13` |
 
-### 区块 2: 物品与附魔系统 (L208-267)
+### 区块 2: 物品与附魔系统 (QoLEnhanced.Enchantment.cs)
 
-| 功能 | 注入方式 | 涉及文件 |
-|------|---------|---------|
-| 物品稀有度文本本地化 | QuickInject | `table_text_prefix.asm` |
-| 附魔品质文本本地化 | QuickInject | `table_text_rarity.asm` |
-| 文本数组扩容 | QuickReplace | `table_text` |
-| 附魔生成逻辑优化 | QuickMatchBelowFiles | `o_skill_enchantment_Other_11_instead.gml` |
-| 附魔核心脚本注入 | AddFunction + SetStringGMLInFile x3 | `_scr_init_weapon_prefixes.gml`, `scr_weapon_generation.gml`, `scr_weapon_prefix_generation.gml`, `scr_weapon_generation_prefix_search.gml` |
-| 附魔条件限制 | QuickMatch | `o_skill_enchantment_Other_20` |
-| 史诗品质背景色 | QuickInsertBelow | `scr_qualityBgDraw` |
+| 功能 | 涉及文件 |
+|------|---------|
+| 物品稀有度文本本地化 | `table_text_prefix.asm` |
+| 附魔品质文本本地化 | `table_text_rarity.asm` |
+| 文本数组扩容 | `table_text` |
+| 附魔生成逻辑优化 | `o_skill_enchantment_Other_11_instead.gml` |
+| 附魔核心脚本注入 | `_scr_init_weapon_prefixes.gml`, `scr_weapon_generation.gml`, `scr_weapon_prefix_generation.gml`, `scr_weapon_generation_prefix_search.gml` |
+| 附魔条件限制 | `o_skill_enchantment_Other_20` |
+| 史诗品质背景色 | `scr_qualityBgDraw` |
 
-### 区块 3: 时间系统与快捷键 (L270-473)
+### 区块 3: 时间系统与快捷键 (QoLEnhanced.TimeAndHotkeys.cs)
 
-| 功能 | 注入方式 | 涉及文件 |
-|------|---------|---------|
-| 日志时间戳 | LoadGML + MatchFrom/InsertAbove | `scr_actionsLog` |
-| 自动寻路系统 | AddFunction x7 + AddMenu + LoadGML 注入 | `_scr_*` 7个文件, `o_globalmapMarkUserContext_Other_25`, `o_player_Create_0`, `o_player_Other_17`, `scr_stop_player` |
-| 等级/AP/SP 修改 | LoadAssemblyAsString + QuickReplaceRange + QuickInject | `o_player_Step_0_levelup.asm`, `o_player_Step_0_instead.asm`, `o_player_Step_0_insert.asm` |
-| 本地化文本注入 | Localization.ActionLogsPatching() | `table_log` |
-| F2 前往标记点 | SetStringGMLInFile | `o_player_KeyPress_113.gml` |
-| F3 打开马车仓库 | SetStringGMLInFile | `o_player_KeyPress_114.gml` |
-| F5 快速存档 | SetStringGMLInFile | `o_player_KeyPress_116.gml` |
-| F9 去除迷雾 | SetStringGMLInFile | `o_player_KeyPress_120.gml` |
-| 人类祈祷永久持续+阶段增益 | InsertGMLString + SetStringGMLInFile | `o_b_bless_Create_0`, `o_b_bless_Alarm_2`, `o_b_bless_Other_10` |
-| 星盘夜视 | QuickMatchBelow | `o_inv_nikos_astrolabe_Other_24` |
-| 马车调度 1.5 天 | QuickMatch | `scr_caravanSettingsGetDispatchTime` |
-| 精神焕发翻倍 | QuickMatchBelow | `o_sleepController_Other_10` |
-| 时刻机警强化 | QuickMatch + ReplaceBy | `table_skills_rebalance_lightning_reflexes.asm` |
+| 功能 | 涉及文件 |
+|------|---------|
+| 日志时间戳 | `scr_actionsLog` |
+| 自动寻路系统 | `_scr_*` 7个文件, `o_globalmapMarkUserContext_Other_25`, `o_player_Create_0`, `o_player_Other_17`, `scr_stop_player` |
+| 等级/AP/SP 修改 | `o_player_Step_0_levelup.asm`, `o_player_Step_0_instead.asm`, `o_player_Step_0_insert.asm` |
+| 本地化文本注入 | `table_log` |
+| F2 前往标记点 | `o_player_KeyPress_113.gml` |
+| F3 打开马车仓库 | `o_player_KeyPress_114.gml` |
+| F5 快速存档 | `o_player_KeyPress_116.gml` |
+| F9 去除迷雾 | `o_player_KeyPress_120.gml` |
+| 人类祈祷永久持续+阶段增益 | `o_b_bless_Create_0`, `o_b_bless_Alarm_2`, `o_b_bless_Other_10` |
+| 星盘夜视 | `o_inv_nikos_astrolabe_Other_24` |
+| 马车调度 1.5 天 | `scr_caravanSettingsGetDispatchTime` |
+| 精神焕发翻倍 | `o_sleepController_Other_10` |
+| 时刻机警强化 | `table_skills_rebalance_lightning_reflexes.asm` |
 
-### 区块 4: 角色机制与开局优化 (L476-580)
+### 区块 4: 角色机制与开局优化 (QoLEnhanced.CharacterMechanics.cs)
 
-| 功能 | 注入方式 | 涉及文件 |
-|------|---------|---------|
-| 野性狩猎全局生效 | InsertGMLString | `o_perks_Create_0.gml` (perk 基类注册) |
-| 野性狩猎效果强化 | QuickMatch x5 (循环) | 5个状态检查脚本 |
-| 移除野性狩猎硬性判定 | QuickMatch | `o_pass_skill_resourcefulness_Alarm_4` |
-| 全角色开局希尔达饰品 | QuickInsertBelow x7 (循环) | 7个角色 Create 事件 |
-| 骨器猎获数值强化 | SetStringGMLInFile + LoadAssemblyAsString | `scr_consum_hilda_enchant_assign.gml`, `scr_cook_check_raw_ingredients` |
-| 开局获得 DLC 物品 | QuickMatch | `o_player_chest_Alarm_1` |
-| 阿娜天赋加成提升 | LoadAssemblyAsString + MatchFromUntil/ReplaceBy | `o_perk_vow_feat_Create_0`, `table_skills_rebalance_vow_feat.asm` |
-| 约娜天赋暴击免费回合 | QuickInsertBelow + SetStringGMLInFile | `scr_crit_death`, `scr_allturn.gml`, `table_skills_rebalance_magical_erudition.asm` |
+| 功能 | 涉及文件 |
+|------|---------|
+| 野性狩猎全局生效 | `o_perks_Create_0.gml` |
+| 野性狩猎效果强化 | 5个状态检查脚本 |
+| 移除野性狩猎硬性判定 | `o_pass_skill_resourcefulness_Alarm_4` |
+| 全角色开局希尔达饰品 | 7个角色 Create 事件 |
+| 骨器猎获数值强化 | `scr_consum_hilda_enchant_assign.gml`, `scr_cook_check_raw_ingredients` |
+| 开局获得 DLC 物品 | `o_player_chest_Alarm_1` |
+| 阿娜天赋加成提升 | `o_perk_vow_feat_Create_0`, `table_skills_rebalance_vow_feat.asm` |
+| 约娜天赋击杀免费回合 | `scr_allturn.gml`, `table_skills_rebalance_magical_erudition.asm` |
 
-### 区块 5: 技能与战斗平衡 (L584-831)
+### 区块 5: 技能与战斗平衡 (QoLEnhanced.SkillsAndCombat.cs)
 
 | 子区块 | 涉及技能 | 关键文件 |
 |--------|---------|---------|
@@ -438,120 +481,65 @@ Msl.AddObject("o_globalmapTP", "s_gui_button_skipturn", "o_button", true, false,
 | 5.7 武器装备 | 远程双持重做、双手武器单持、双持惩罚移除、暴击范围、格挡损耗 | `_scr_do_shoot.gml`, `_scr_extract_crossbow_bolt.gml`, `_scr_fire_bow_once.gml`, `_scr_get_weapon_hand_types.gml`, `scr_is_ammo_exist.gml`, `scr_throw.gml`, `scr_crossbow_insert_bolt.gml`, `scr_crossbow_reject_bolt.gml`, `scr_inv_weapon_get_hands.gml`, `table_skills_rebalance_taking_aim.asm` |
 | 5.8 修补收集 | 剥皮强化 100% | `o_flaying_Other_10` |
 | 5.9 Alt 键详情 | 按 Alt 显示详细技能信息 | `o_hoverSkill_Other_20.gml`, `o_hoverRender_Step_2.gml` |
+| 5.10 连锁闪电修复 | 连续释放传导失效修复、动态传导上限 | `o_skill_chain_lightning_Other_17.gml`, `table_skills_rebalance_chain_lightning.asm` |
+| 5.11 残余电荷强化 | Shock_Resistance 衰减 + 暴击强化分支 | `o_pass_skill_residual_charge_Other_17.gml`, `o_skill_electromancy_Other_15.gml`, `table_skills_rebalance_residual_charge.asm` |
 
-### 区块 6: 魔法系统平衡 (L834-864)
+### 区块 6: 魔法系统平衡 (已合并至 SkillsAndCombat.cs 5.12)
 
-| 功能 | 注入方式 | 涉及文件 |
-|------|---------|---------|
-| 移除派系魔法互斥惩罚 | LoadGML + MatchAll/ReplaceBy x4 (循环) | 4个魔法派系的 `Other_15` 事件 |
+| 功能 | 涉及文件 |
+|------|---------|
+| 移除派系魔法互斥惩罚 | 4个魔法派系的 `Other_15` 事件 |
 
-### 区块 7: 消耗品与工具强化 (L868-980)
+### 区块 7: 消耗品与工具强化 (QoLEnhanced.Consumables.cs)
 
-| 功能 | 变更 | 注入方式 |
-|------|------|---------|
-| 撬棍 | 耐久 50→100, 损耗 40→20 | LoadGML + MatchFrom/ReplaceBy |
-| 维修工具 | 次数 5→15 | QuickMatch |
-| 药膏 | 次数 3→8 | QuickMatch |
-| 绷带 | 次数 2→8 | QuickMatch |
-| 夹板 | 次数 1→3, 添加 max_charge | QuickMatch |
-| 灵药 | 次数 1→8 | QuickMatch |
-| 水囊 | 次数 6→20 | QuickMatch |
-| 涤魂圣杯 | 次数 1→20 | QuickMatch |
-| 卷轴系统 | 辨识/附魔/褪魔卷轴 8 次+次数显示 | QuickMatch |
-| 加盐保鲜 | Fresh 值 x1000 | QuickMatch x2 |
-| 大篷车保鲜 | 腐败速度 x0.001 | QuickMatch |
-| 食物新鲜度显示 | 24h 内切换为小时显示 | QuickMatchFromUntil |
+| 功能 | 变更 |
+|------|------|
+| 撬棍 | 耐久 50→100, 损耗 40→20 |
+| 维修工具 | 次数 5→15 |
+| 药膏 / 绷带 / 夹板 / 灵药 | 次数大幅提升 |
+| 水囊 | 次数 6→20 |
+| 涤魂圣杯 | 次数 1→20 |
+| 卷轴系统 | 辨识/附魔/褪魔卷轴 8 次+次数显示 |
+| 加盐保鲜 | Fresh 值 x1000 |
+| 大篷车保鲜 | 腐败速度 x0.001 |
+| 食物新鲜度显示 | 24h 内切换为小时显示 |
 
-### 区块 8: 经济系统优化 (L984-1054)
+### 区块 8: 经济系统优化 (QoLEnhanced.Economy.cs)
 
-| 功能 | 注入方式 | 涉及文件 |
-|------|---------|---------|
-| 统一商人定价 | LoadGML + MatchBelow/ReplaceBy | `o_NPC_Create_0_Price.gml` |
-| 商人基础金币 +1500 | QuickMatch | `scr_npc_gold_init` |
-| 大篷车随从强化 | QuickMatchAll | `o_npc_darrel_caravan_Create_0.gml` |
-| 马车夫强化 | QuickMatchAll | `o_npc_tott_Create_0.gml` |
-| 传送系统 | AddMenu + AddObject + LoadGML 注入 | `o_globalmapTP_Create_0.gml`, `o_globalmapTP_Other_10.gml`, `o_globalmap_Other_10`, `o_globalmapMarkUserContext_Other_25` |
+| 功能 | 涉及文件 |
+|------|---------|
+| 统一商人定价 | `o_NPC_Create_0_Price.gml` |
+| 商人基础金币 +1500 | `scr_npc_gold_init` |
+| 大篷车随从强化 | `o_npc_darrel_caravan_Create_0.gml` |
+| 马车夫强化 | `o_npc_tott_Create_0.gml` |
+| 传送系统 | `o_globalmapTP_Create_0.gml`, `o_globalmapTP_Other_10.gml`, `o_globalmap_Other_10`, `o_globalmapMarkUserContext_Other_25` |
 
-### 区块 9: 背包与仓库 UI (L1058-1117)
+### 区块 9: 背包与仓库 UI (QoLEnhanced.InventoryUI.cs)
 
-| 功能 | 注入方式 | 涉及文件 |
-|------|---------|---------|
-| 交易界面扩容 | QuickMatch x7 (循环) | `o_trade_inventory_Create_0` |
-| 仓库界面扩容 | QuickMatch x7 (循环) | `o_stash_inventory_Create_0` |
-| 背包扩容 (11x12) | QuickMatchFromUntil | `o_inventory_Create_0` |
-| UI 贴图替换 (720p) | Msl.GetObject().Sprite = | 4个 inventory 对象 |
-| 1080p 适配 (已注释) | — | — |
+| 功能 | 涉及文件 |
+|------|---------|
+| 交易界面扩容 | `o_trade_inventory_Create_0` |
+| 仓库界面扩容 | `o_stash_inventory_Create_0` |
+| 背包扩容 (11x12) | `o_inventory_Create_0` |
+| UI 贴图替换 (720p) | 4个 inventory 对象 |
 
-### 区块 10: 堆叠系统优化 (L1120-1165)
+### 区块 10: 堆叠系统优化 (QoLEnhanced.Stacking.cs)
 
-| 功能 | 变更 | 注入方式 |
-|------|------|---------|
-| 金币堆叠 | 100→1000 | QuickMatch + LoadGML/MatchBelow/ReplaceBy |
-| 钱袋堆叠 | 2000→20000 | QuickMatch |
-| 古钱币堆叠 | 50→1000 | QuickMatch |
-| 弹药堆叠 | 20→100 + 贴图重算 | LoadGML + MatchFrom/ReplaceBy x3 |
-| 投石索弹药 | 10→100 | QuickMatch |
-| 堆叠逻辑核心 | 合并/拆分/找空位 | QuickMatchAll x3 |
+| 功能 | 变更 |
+|------|------|
+| 金币堆叠 | 100→1000 |
+| 钱袋堆叠 | 2000→20000 |
+| 古钱币堆叠 | 50→1000 |
+| 弹药堆叠 | 20→100 + 贴图重算 |
+| 投石索弹药 | 10→100 |
 
-### 区块 11: 属性上限与战斗公式 (L1168-1192)
+### 区块 11: 属性上限与战斗公式 (QoLEnhanced.AttributeCaps.cs)
 
-| 功能 | 注入方式 | 涉及文件 |
-|------|---------|---------|
-| 属性计算上限提升 | QuickMatchAll x2 | `scr_atr_calc.gml`, `scr_atr_calc_combat.gml` |
-| 技能冷却上限解除 | QuickMatchFromUntil | `o_skill_Other_17` |
-| 属性提升 UI 上限至 100 | QuickMatch x2 | `o_attribute_button_Step_2`, `o_character_attribute_Step_2` |
-
-### 区块 12: 其他优化 (L1195-1210)
-
-- 12.1: 职业被动强化 (TODO — 阿娜被动增益计划中)
-- 12.2: 待实装功能 (预留)
-
----
-
-## 关键文件索引
-
-### 大型脚本 (>500 行)
-
-| 文件 | 行数 (估计) | 用途 |
-|------|-----------|------|
-| [scr_atr_calc.gml](Codes/gml_GlobalScript_scr_atr_calc.gml) | ~1000+ | 全局属性计算核心（clamp 上限修改） |
-| [scr_atr_calc_combat.gml](Codes/gml_GlobalScript_scr_atr_calc_combat.gml) | ~500+ | 战斗属性计算 |
-| [scr_weapon_generation.gml](Codes/gml_GlobalScript_scr_weapon_generation.gml) | ~300+ | 武器生成逻辑 |
-| [scr_weapon_prefix_generation.gml](Codes/gml_GlobalScript_scr_weapon_prefix_generation.gml) | ~200+ | 武器前缀生成 |
-| [scr_throw.gml](Codes/gml_GlobalScript_scr_throw.gml) | ~200+ | 远程攻击核心（双持远程重做） |
-| [scr_crossbow_insert_bolt.gml](Codes/gml_GlobalScript_scr_crossbow_insert_bolt.gml) | ~200+ | 弩箭装填逻辑 |
-| [scr_consum_hilda_enchant_assign.gml](Codes/gml_GlobalScript_scr_consum_hilda_enchant_assign.gml) | ~80 | 希尔达饰品附魔分配 |
-
-### 辅助脚本 (来自 `Codes/`)
-
-| 文件 | 注册名 | 用途 |
-|------|--------|------|
-| `_scr_do_shoot.gml` | `gml_GlobalScript__scr_do_shoot` | 远程攻击 projectile 创建封装 |
-| `_scr_get_weapon_hand_types.gml` | `gml_GlobalScript__scr_get_weapon_hand_types` | 获取双手武器类型 |
-| `_scr_extract_crossbow_bolt.gml` | `gml_GlobalScript__scr_extract_crossbow_bolt` | 提取弩箭 |
-| `_scr_fire_bow_once.gml` | `gml_GlobalScript__scr_fire_bow_once` | 单次弓箭射击 |
-| `_scr_init_weapon_prefixes.gml` | `gml_GlobalScript__scr_init_weapon_prefixes` | 武器前缀初始化 |
-| `_scr_move_player_to.gml` | `gml_Script__scr_move_player_to` | 自动寻路：移动玩家 |
-| `_scr_calculate_closest_point.gml` | `gml_Script__scr_calculate_closest_point` | 自动寻路：计算最近点 |
-| `_scr_find_nearest_tile_transition.gml` | `gml_Script__scr_find_nearest_tile_transition` | 自动寻路：找最近的 tile 过渡 |
-| `_scr_find_exit_door.gml` | `gml_Script__scr_find_exit_door` | 自动寻路：找出口 |
-| `_scr_auto_move_to_transition.gml` | `gml_Script__scr_auto_move_to_transition` | 自动寻路：移动到过渡点 |
-| `_scr_redeactivate_instances.gml` | `gml_Script__scr_redeactivate_instances` | 自动寻路：重新停用实例 |
-| `_scr_stop_auto_move.gml` | `gml_Script__scr_stop_auto_move` | 自动寻路：停止自动移动 |
-| `_scr_scale_enemy_csv_by_level.gml` | `gml_GlobalScript__scr_scale_enemy_csv_by_level` | 按等级缩放敌人属性 |
-
-### ASM 片段
-
-| 文件 | 注入目标 | 用途 |
-|------|---------|------|
-| `table_attributes_rebalance_agility.asm` | `table_attributes` | 敏捷额外减伤 2%/点 |
-| `table_skills_rebalance_*.asm` (7个) | `table_skills` | 7个技能的描述文本修正 |
-| `table_text_prefix.asm` | `table_text` | 附魔词缀本地化 |
-| `table_text_rarity.asm` | `table_text` | 稀有度文本本地化 |
-| `o_player_Step_0_levelup.asm` | `o_player_Step_0` | 升级 AP/SP 奖励修改 |
-| `o_player_Step_0_instead.asm` | `o_player_Step_0` | 等级上限经验曲线替换 |
-| `o_player_Step_0_insert.asm` | `o_player_Step_0` | 标记地点全局判断 |
-| `o_enemy_Destroy_0_insert.asm` | `o_enemy_Destroy_0` | 经验值缩放修正 |
+| 功能 | 涉及文件 |
+|------|---------|
+| 属性计算上限提升 | `scr_atr_calc.gml`, `scr_atr_calc_combat.gml` |
+| 技能冷却上限解除 | `o_skill_Other_17` |
+| 属性提升 UI 上限至 100 | `o_attribute_button_Step_2`, `o_character_attribute_Step_2` |
 
 ---
 
@@ -580,6 +568,71 @@ Msl.AddObject("o_globalmapTP", "s_gui_button_skipturn", "o_button", true, false,
 - 当需要了解某个原版函数的实现时，在此目录中搜索对应的 `.gml` 文件
 - 找到关键的代码行后，将其用作 `MatchFrom` 的匹配字符串
 - 此目录文件巨大（如 `DialogueData.gml` 1.4MB），不要全量加载
+
+---
+
+## 全局变量清单
+
+| 变量 | 初始化位置 | 用途 |
+|------|-----------|------|
+| `global.jonna_pre_cast_enemies` | `o_perk_magical_erudition_Create_0` | 约娜天赋：施法前敌人快照，`scr_allturn` 中检测 HP<1 判定击杀 |
+| `global.riposte_free_turn` | `o_b_riposte_Create_0` | 招架击杀后的免费回合标志 |
+| `global.enemy_balance_by_LVL` | `_scr_scale_enemy_csv_by_level` | 敌人属性缩放缓存的玩家等级 |
+| `global.chain_lightning_count` | `scr_allturn` 每回合重置 | 连锁闪电当回合传导计数 |
+| `global.weapon_value_type` | `_scr_init_weapon_prefixes` | 武器词缀 value_type 注册表 (ds_map) |
+
+## 武器词缀 value_type 系统
+
+附魔词缀的数值取值方式由 `value_type` 控制（存储在 `global.weapon_value_type` ds_map 中）：
+
+| 值 | 含义 | 取值方式 |
+|---|---|---|
+| `0` | 整数（默认） | `irandom_range(floor(min), floor(max))` — 真正的 [a,b] 闭区间 |
+| `1` | 0.5 步进 | `min + irandom(steps) * 0.5` |
+| `2` | 0.2 步进 | `min + irandom(steps) * 0.2` |
+
+诅咒装备（quality == Curse）对齐格点的写法：
+```gml
+if      (value_type == 1) char_value = round(_raw * 2) / 2
+else if (value_type == 2) char_value = round(_raw * 5) / 5
+else                      char_value = round(_raw)
+```
+
+> 修复了原版 `ceil(random_range(min, max))` 两端取不到的问题。`irandom_range` 是真正的闭区间。
+
+## 电系技能被动触发机制
+
+### 问题根因
+
+`o_skill_electromancy_Other_15`（电系基类 UE5）中 `event_inherited()` 调用 `o_skill_Other_15`，基类末尾执行 `is_crit = false`。子类在 `event_inherited()` 之后调用 `scr_skill_call_passive()` 时，暴击状态已丢失。
+
+### 解决方案
+
+在 `event_inherited()` 之前捕获 `is_crit`，通过 `scr_skill_call_passive` 的 arg3 传入被动：
+
+```gml
+var _crit = is_crit
+event_inherited()
+if (instance_exists(o_player))
+{
+    scr_skill_call_passive(o_pass_skill_residual_charge, o_player.id, -4, _crit)
+}
+```
+
+### 残余电荷被动 (o_pass_skill_residual_charge) 事件映射
+
+| 事件 | 职责 |
+|------|------|
+| Other_13 (UE3) | 激活时：创建 buff `o_b_residual_charge` |
+| Other_15 (UE5) | 属性结算：Shock_Resistance 衰减 + 暴击强化 |
+| Other_17 (UE7) | 提示文本刷新 |
+
+暴击分支数值：
+
+| | 普通命中 | 法术暴击 |
+|---|---|---|
+| 每层衰减 | -0.5% | -1.0% |
+| 持续时间 | 6 回合 | 8 回合 |
 
 ---
 

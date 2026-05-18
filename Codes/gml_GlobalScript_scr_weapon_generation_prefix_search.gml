@@ -1,167 +1,156 @@
+// 所有值类型逻辑完全内联，无需任何新增脚本
 function scr_weapon_generation_prefix_search(argument0, argument1)
 {
-    // ========================================
-    // 初始化计数器和映射表
-    // ========================================
-    
     var prefix_count = ds_map_create();
-    var char_map = ds_map_create();
-    
-    // ========================================
-    // 生成词缀
-    // ========================================
+    var char_map     = ds_map_create();
+
     for (var i = 0; i < argument0; i++)
     {
-        var attempts = 0;
+        var attempts     = 0;
         var max_attempts = 100;
-        var found = false;
-        var new_value = undefined;
+        var found        = false;
+        var new_value    = undefined;
         var new_char_value = undefined;
-        
-        // ========================================
-        // 尝试找到符合条件的词缀
-        // ========================================
-        
+
+        // ── 随机抽取符合槽位的词缀 ──────────────────────────────
         while (!found && attempts < max_attempts)
         {
             attempts++;
-            
+
             var key = ds_map_find_first(argument1);
             var skip_count = floor(random(ds_map_size(argument1)));
-            
             for (var j = 0; j < skip_count; j++)
                 key = ds_map_find_next(argument1, key);
-            
-            var stat_name = ds_map_find_value(argument1, key);
+
+            var stat_name  = ds_map_find_value(argument1, key);
             var slot_value = ds_map_find_value(global.weapon_slotmap, stat_name);
-            var metatype = ds_map_find_value(data, "Metatype");
-            
+            var metatype   = ds_map_find_value(data, "Metatype");
+
             if (metatype == slot_value || slot_value == "all")
                 found = true;
         }
-        
-        if (!found)
-            exit;
-        
-        // ========================================
-        // ✅ 计算属性值（从全局配置读取）
-        // ========================================
-        
-        // ✅ 从全局 effect 获取范围
-        var value_range = ds_map_find_value(global.weapon_effect, stat_name);
-        var char_value = 0;
-        
-        // ✅ 诅咒装备：使用上限值 × 1.3（固定）
-        if (quality == Curse)
-        {
-            if (value_range != undefined)
-            {
-                var max_value = ds_list_find_value(value_range, 1);
-                char_value = ceil(max_value * 1.3);
-            }
-        }
-        // ✅ 非诅咒装备：使用随机值
-        else
-        {
-            if (value_range != undefined)
-            {
-                var min_value = ds_list_find_value(value_range, 0);
-                var max_value = ds_list_find_value(value_range, 1);
-                char_value = ceil(random_range(min_value, max_value));
-            }
-        }
-        
-        // ========================================
-        // 生成全名
-        // ========================================
-        
-        var percent_suffix = scr_atr_percent(stat_name);
-        if (percent_suffix == undefined)
-            percent_suffix = "%";
-        
-        var full_name = char_value >= 0 ? stat_name + " +" + string(char_value) + percent_suffix : stat_name + " " + string(char_value) + percent_suffix;
-        
-        // ========================================
-        // ✅ 检查是否可叠加（从全局配置读取）
-        // ========================================
-        
-        var max_stack = ds_map_find_value(global.weapon_stackable, stat_name);  // ✅ 从全局配置读取
-        var current_count = ds_map_find_value(prefix_count, key) != undefined ? ds_map_find_value(prefix_count, key) : 0;
-        
-        // ========================================
-        // 检查是否达到最大次数
-        // ========================================
-        
+
+        if (!found) break;
+
+        // ── 叠加上限检查 ─────────────────────────────────────────
+        var max_stack    = ds_map_find_value(global.weapon_stackable, stat_name);
+        if (max_stack == undefined) max_stack = 1;
+
+        var current_count = ds_map_find_value(prefix_count, stat_name);
+        if (current_count == undefined) current_count = 0;
+
         if (current_count >= max_stack)
         {
-            // 已达到最大次数，跳过并重试
             i--;
             continue;
         }
-        
-        // ========================================
-        // 叠加属性值
-        // ========================================
-        
-        var existValue = ds_map_find_value(data, stat_name);
-        
-        if (existValue == undefined)
+
+        // ── 读取范围与值类型 ─────────────────────────────────────
+        var value_range = ds_map_find_value(global.weapon_effect,     stat_name);
+        var value_type  = ds_map_find_value(global.weapon_value_type, stat_name);
+        if (value_type == undefined) value_type = 0;
+
+        var char_value = 0;
+
+        if (value_range != undefined)
         {
-            // 首次出现：直接添加
-            ds_map_add(data, string(stat_name), char_value);
+            var min_value = ds_list_find_value(value_range, 0);
+            var max_value = ds_list_find_value(value_range, 1);
+
+            if (quality == Curse)
+            {
+                // ── 诅咒：上限 × 1.3 后对齐到步进格点 ──────────
+                var _raw = max_value * 1.3;
+                switch (value_type)
+                {
+                    case 1: char_value = round(_raw * 2) / 2;  break; // 0.5步进
+                    case 2: char_value = round(_raw * 5) / 5;  break; // 0.2步进
+                    default: char_value = round(_raw);           break; // 整数
+                }
+            }
+            else
+            {
+                // ── 正常随机：irandom 保证两端均可取到 ──────────
+                if (value_type == 1)
+                {
+                    // 0.5 步进
+                    var _steps = round((max_value - min_value) / 0.5);
+                    char_value = min_value + irandom(_steps) * 0.5;
+                }
+                else if (value_type == 2)
+                {
+                    // 0.2 步进
+                    var _steps = round((max_value - min_value) / 0.2);
+                    char_value = min_value + irandom(_steps) * 0.2;
+                }
+                else
+                {
+                    // 整数（默认）：irandom_range [min, max] 闭区间
+                    char_value = irandom_range(floor(min_value), floor(max_value));
+                }
+            }
         }
+
+        // ── 格式化显示字符串（内联） ─────────────────────────────
+        var val_str;
+        if (value_type == 1 || value_type == 2)
+            val_str = string_format(char_value, 0, 1); // 保留1位小数
+        else
+            val_str = string(char_value);
+
+        var percent_suffix = scr_atr_percent(stat_name);
+        if (percent_suffix == undefined) percent_suffix = "%";
+
+        var full_name = (char_value >= 0)
+            ? stat_name + " +" + val_str + percent_suffix
+            : stat_name + " "  + val_str + percent_suffix;
+
+        // ── 叠加到 data ──────────────────────────────────────────
+        var existValue = ds_map_find_value(data, stat_name);
+
+        if (existValue == undefined)
+            ds_map_add(data, string(stat_name), char_value);
         else
         {
-            // 已存在：叠加数值
             new_value = real(char_value) + real(existValue);
             ds_map_replace(data, string(stat_name), new_value);
         }
-        
-        // ========================================
-        // 更新 Char 字段（合并显示）
-        // ========================================
-        
+
+        // ── 更新 Char 显示字段 ───────────────────────────────────
         var existing_char_key = ds_map_find_value(char_map, stat_name);
-        
+
         if (existing_char_key != undefined)
         {
-            // 已存在：更新 Char 字段
             new_char_value = ds_map_find_value(data, stat_name);
-            
-            if (new_char_value >= 0)
-                ds_map_replace(data, existing_char_key, stat_name + " +" + string(new_char_value) + percent_suffix);
+            var ncs;
+            if (value_type == 1 || value_type == 2)
+                ncs = string_format(new_char_value, 0, 1);
             else
-                ds_map_replace(data, existing_char_key, stat_name + " " + string(new_char_value) + percent_suffix);
+                ncs = string(new_char_value);
+
+            if (new_char_value >= 0)
+                ds_map_replace(data, existing_char_key, stat_name + " +" + ncs + percent_suffix);
+            else
+                ds_map_replace(data, existing_char_key, stat_name + " "  + ncs + percent_suffix);
         }
         else
         {
-            // 不存在：添加新的 Char 字段
             var char_key = "Char" + string(n);
             ds_map_add(data, char_key, full_name);
             n++;
-            
-            // 记录映射关系
             ds_map_add(char_map, stat_name, char_key);
         }
-        
-        // ========================================
-        // 更新词缀使用次数
-        // ========================================
-        
-        ds_map_add(prefix_count, key, current_count + 1);
-        
-        // ========================================
-        // 记录第一个词缀的 key
-        // ========================================
-        
+
+        // ── 记录首词缀 key / 更新计数 ────────────────────────────
         if (n == 1)
             ds_map_add(data, "key", key);
+
+        if (current_count == 0)
+            ds_map_add(prefix_count, stat_name, 1);
+        else
+            ds_map_replace(prefix_count, stat_name, current_count + 1);
     }
-    
-    // ========================================
-    // 清理临时 map
-    // ========================================
-    
+
     ds_map_destroy(prefix_count);
     ds_map_destroy(char_map);
 }

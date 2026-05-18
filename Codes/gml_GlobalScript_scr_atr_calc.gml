@@ -37,11 +37,11 @@ function scr_atr_calc(argument0, argument1)
                 var _str = scr_buff_param("STR");
                 var _prc = scr_buff_param("PRC");
                 var _will = scr_buff_param("WIL");
-                STR = clamp(bSTR + _str, 2, 180);
+                STR = clamp(bSTR + _str, 2, 200);
                 AGL = clamp(bAGL + _agl, 2, 180);
                 PRC = clamp(bPRC + _prc, 2, 180);
-                Vitality = clamp(bVIT + _vit, 2, 180);
-                WIL = clamp(bWIL + _will, 2, 180);
+                Vitality = clamp(bVIT + _vit, 2, 200);
+                WIL = clamp(bWIL + _will, 2, 200);
                 Avoiding_Trap = bAvoiding_Trap;
                 Bonus_Range = scr_buff_param("Bonus_Range");
                 
@@ -65,11 +65,11 @@ function scr_atr_calc(argument0, argument1)
                     if (attributes_owner_depender && instance_exists(owner))
                     {
                         var _owner_hp = (object_index == o_astral_phantasm) ? (owner.Magic_Power / 100) : (owner.Magic_Power / 100);
-                        max_hp = ((bHP * _owner_hp * (1.05 - (scr_tile_distance_min(id, owner) * 0.05))) + scr_buff_param("max_hp")) * 3;
+                        max_hp = ((bHP * _owner_hp * (1.05 - (scr_tile_distance_min(id, owner) * 0.05))) + scr_buff_param("max_hp") + Vitality * 3) * 2;
                     }
                     else
                     {
-                        max_hp = math_round(bHP + scr_buff_param("max_hp")) * 3;
+                        max_hp = math_round(bHP + scr_buff_param("max_hp") + Vitality * 3) * 2;
                     }
                     
                     max_hp = math_round(max(1, max_hp));
@@ -126,7 +126,7 @@ function scr_atr_calc(argument0, argument1)
                 VSN = clamp((bVSN + scr_buff_param("VSN")) * (1 + (VSN_Bonus / 100)), 0, 15);
                 currentVSN = clamp(VSN + scr_buff_param("currentVSN"), 0, 15);
                 hear_value = clamp(bhear_value + scr_buff_param("HEAR"), 0, 1);
-                morale_factor = clamp(bmorale_factor + scr_buff_param("Morale_Factor") + WIL * 2 + PRC + Vitality, 0, 1000); // QoL: WIL/PRC/Vitality 传导士气，最高 200→1000
+                morale_factor = clamp(bmorale_factor + scr_buff_param("Morale_Factor") + (WIL + PRC + Vitality) * 5, 0, 1000); // QoL: WIL/PRC/Vitality 传导士气，最高 200→1000
                 Hit_Chance = clamp(bHit_Chance + scr_buff_param("Hit_Chance") + AGL * 1.5, 5, 300); // QoL: AGL 传导命中，上限 150→300
                 Spell_Hit_Chance = clamp(bSpell_Hit_Chance + scr_buff_param("Spell_Hit_Chance") + PRC * 1.5, 5, 300); // QoL: PRC 传导法术命中
                 Magic_Power = clamp(bMagic_Power + scr_buff_param("Magic_Power") + WIL * 2, 25, 500); // QoL: WIL 传导法力伤害，上限 300→500
@@ -136,7 +136,7 @@ function scr_atr_calc(argument0, argument1)
                     Healing_Received = bHealing_Received + scr_buff_param("Healing_Received");
                     Health_Restoration = clamp(bHealth_Restoration + scr_buff_param("Health_Restoration"), 0, 100);
                     Magic_Resistance = math_round(bMagic_Resistance + scr_buff_param("Magic_Resistance"));
-                    Fortitude = clamp(bFortitude + _will + scr_buff_param("Fortitude") + WIL * 1.5, -100, 100); // QoL: WIL 传导强韧，上限 50→200
+                    Fortitude = clamp(bFortitude + _will + scr_buff_param("Fortitude") + WIL * 1.5, -100, 95); // QoL: WIL 传导强韧，上限 50→100
                     MP_Restoration = clamp(bMP_Restoration + scr_buff_param("MP_Restoration"), 0, 100);
                     Backfire_Damage_Change = clamp(scr_buff_param("Backfire_Damage_Change"), -200, 200);
                     Miracle_Chance = clamp(bMiracle_Chance + scr_buff_param("Miracle_Chance") + PRC, 0, 150);    // QoL: PRC 传导奇观几率
@@ -145,9 +145,9 @@ function scr_atr_calc(argument0, argument1)
                     scr_painlimit(isPlayer);
                     Pain_Change = scr_buff_param("Pain_Change");
                     Pain_K = 1;
-                    Lifesteal = bLifesteal + scr_buff_param("Lifesteal");
-                    Manasteal = bManasteal + scr_buff_param("Manasteal");
                     var _total_attributes = STR + AGL + Vitality + PRC + WIL; // QoL: 五维属性总和影响伤害增减
+                    Lifesteal = bLifesteal + scr_buff_param("Lifesteal") + (STR + AGL + Vitality + PRC + WIL) * 0.01; // QoL: 五维属性总和传导生命偷取
+                    Manasteal = bManasteal + scr_buff_param("Manasteal") + (STR + AGL + Vitality + PRC + WIL) * 0.01; // QoL: 五维属性总和传导法力偷取
                     Damage_Received = clamp((bDamage_Received + scr_buff_param("Damage_Received")) * power(0.99, _total_attributes/1.5), 5, 200); // QoL: 五维之和降低受伤
                     Damage_Returned = clamp(bDamage_Returned + scr_buff_param("Damage_Returned"), 0, 100);
                     Pyromantic_Power = scr_buff_param("Pyromantic_Power") + bPyromantic_Power;
@@ -163,7 +163,7 @@ function scr_atr_calc(argument0, argument1)
                     if (!scr_passive_skill_is_open(o_enemy_pass_steadfastness))
                         _cooldown_reduction_mod = scr_buff_param("Cooldown_Reduction");
                     
-                    Cooldown_Reduction = clamp(bCooldown_Reduction + _cooldown_reduction_mod - WIL, 10, 200);
+                    Cooldown_Reduction = clamp(bCooldown_Reduction + _cooldown_reduction_mod - WIL, 10, 200);       // QoL: WIL 减少冷却时间，最低 10%
                     Spells_Energy_Cost = clamp(bSpells_Energy_Cost + scr_buff_param("Spells_Energy_Cost"), -75, 200);
                     Skills_Energy_Cost = clamp(bSkills_Energy_Cost + scr_buff_param("Skills_Energy_Cost"), -75, 200);
                     Abilities_Energy_Cost = clamp(bAbilities_Energy_Cost + scr_buff_param("Abilities_Energy_Cost"), 25, 300);
@@ -278,11 +278,11 @@ function scr_atr_calc(argument0, argument1)
             
             scr_player_buff_buffer();
             LVL = scr_atr("LVL");
-            STR = clamp(scr_FullAtr("STR"), 5, 100);
-            AGL = clamp(scr_FullAtr("AGL"), 5, 100);
-            PRC = clamp(scr_FullAtr("PRC"), 5, 100);
-            Vitality = clamp(scr_FullAtr("Vitality"), 5, 100);
-            WIL = clamp(scr_FullAtr("WIL"), 5, 100);
+            STR = clamp(scr_FullAtr("STR"), 5, 160);
+            AGL = clamp(scr_FullAtr("AGL"), 5, 160);
+            PRC = clamp(scr_FullAtr("PRC"), 5, 160);
+            Vitality = clamp(scr_FullAtr("Vitality"), 5, 160);
+            WIL = clamp(scr_FullAtr("WIL"), 5, 160);
             var _bonusAGL = floor((AGL - 10)/5);
             var _bonusPRC = floor((PRC - 10)/5);
             var _bonusVIT = floor((Vitality - 10)/5);
@@ -361,8 +361,15 @@ function scr_atr_calc(argument0, argument1)
             Savvy = clamp(50 + scr_atr("bSavvy") + scr_inv_buff_atr("Savvy"), 0, 100);
             VSN_Bonus = clamp(scr_buff_param("VSN_Bonus"), -30, 200);
             var _buff_vsn = scr_buff_param("VSN") + scr_atr("bVSN");
-            VSN = clamp(math_round((((bVSN + _bonusPRC) * (1 + (0.05 * _bonusPRC))) + _buff_vsn) * (1 + (VSN_Bonus / 100)) + scr_inv_param("VSN")), 1, 40);
-            currentVSN = clamp(VSN + scr_buff_param("currentVSN"), 1, 40);
+            var _base_vsn = (bVSN + _bonusPRC) * (1 + (0.05 * _bonusPRC)) + _buff_vsn;
+            VSN = clamp(math_round(_base_vsn * (1 + (VSN_Bonus / 100)) + scr_inv_param("VSN")), 1, 40);
+
+            var _current_buff = scr_buff_param("currentVSN");
+            var _current_with_prc = VSN + _current_buff + _bonusPRC * 0.5;
+            if (_current_with_prc < VSN)
+                currentVSN = clamp(math_round(_current_with_prc), 1, 40);
+            else
+                currentVSN = clamp(VSN + _current_buff, 1, 40);
             Bonus_Range = math_round(scr_inv_buff_atr("Bonus_Range") + (_bonusPRC * 8));
             MP_turn = scr_buff_param("MP_turn");
             HP_turn = scr_buff_param("HP_turn");
@@ -440,7 +447,7 @@ function scr_atr_calc(argument0, argument1)
             melee_range = 2;
             Damage_Returned = clamp(scr_inv_buff_atr("Damage_Returned"), 0, 200);
             Hunger_Resistance = clamp(bHunger_Resistance + scr_inv_buff_atr("Hunger_Resistance"), -100, 200);
-            Damage_Received = clamp((100 + scr_inv_buff_atr("Damage_Received") - 10 * scr_check_item_inventory(o_inv_hill_tapestry)) * power(0.98, AGL - 10), 1, 400);
+            Damage_Received = clamp((100 + scr_inv_buff_atr("Damage_Received") - 10 * scr_check_item_inventory(o_inv_hill_tapestry)) * power(0.98, Vitality - 10), 1, 400);
             Noise_Produced = clamp(100 + scr_inv_buff_atr("Noise_Produced"), 1, 200);
             Backfire_Damage = clamp(scr_atr("Backfire_Damage") + scr_inv_buff_atr("Backfire_Damage"), 0, 200);
             Backfire_Damage_Change = clamp(scr_inv_buff_atr("Backfire_Damage_Change"), -200, 200);

@@ -20,8 +20,7 @@ function _scr_scale_enemy_csv_by_level()
     var _lvl = scr_atr("LVL");
 
     // ---- 缓存检查：等级未变化则静默退出 ----
-    if (variable_global_exists("enemy_balance_by_LVL")
-        && global.enemy_balance_by_LVL == _lvl)
+    if (global.enemy_balance_by_LVL == _lvl)
         exit;
 
     // ---- 首次运行：从游戏原始函数重新加载干净的表 ----

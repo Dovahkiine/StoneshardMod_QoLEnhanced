@@ -33,8 +33,7 @@ function scr_throw(argument0, argument1, argument2)
 
         for (var i = 0; i < _count; i += 2)
         {
-            if (!scr_projectile_have_barriers(x, y, argument0.x + (_placelist[i] * 26),
-                                                      argument0.y + (_placelist[i + 1] * 26)))
+            if (!scr_projectile_have_barriers(x, y, argument0.x + (_placelist[i] * 26), argument0.y + (_placelist[i + 1] * 26)))
             {
                 _is_target_visible = true;
                 break;

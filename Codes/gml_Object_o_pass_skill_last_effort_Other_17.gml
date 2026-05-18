@@ -13,11 +13,11 @@ if (is_open && instance_exists(owner))
         _mp = math_floor(_mp);
     }
     
-    // 根据缺失魔力降低冷却与能量消耗
+    // 根据现有魔力降低冷却与能量消耗
     ds_map_add(data, "Cooldown_Reduction", -4 * _mp);
     ds_map_add(data, "Abilities_Energy_Cost", -8 * _mp);
     
-    // 根据缺失生命提升武器伤害与命中率
+    // 根据现有生命提升武器伤害与命中率
     ds_map_add(data, "Weapon_Damage", 5 * _hp);
     ds_map_add(data, "Hit_Chance", 3 * _hp);
     

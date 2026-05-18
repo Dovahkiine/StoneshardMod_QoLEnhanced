@@ -135,11 +135,6 @@ function scr_weapon_generation()
         
         n = 0;
         
-        if (!variable_global_exists("weapon_prefixes_initialized"))
-        {
-            global.weapon_prefixes_initialized = true;
-            _scr_init_weapon_prefixes();
-        }
         // ✅ 使用全局变量进行词缀搜索
         scr_weapon_generation_prefix_search(common_chars, global.weapon_common);
         scr_weapon_generation_prefix_search(rare_chars, global.weapon_rare);

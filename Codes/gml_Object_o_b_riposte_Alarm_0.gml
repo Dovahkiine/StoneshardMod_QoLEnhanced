@@ -67,7 +67,7 @@ with (target) // target = 玩家
     Hit_Chance    = _prev_hit;
 
     // ---- 检测是否击杀 → 累加免费回合（每次反击击杀 +2）----
-    if (!instance_exists(_real_target) || _real_target.HP < 1) global.got_free_turn += 1;
+    if (!instance_exists(_real_target) || _real_target.HP < 1) global.got_free_turn++;
 }
 
 // 清理

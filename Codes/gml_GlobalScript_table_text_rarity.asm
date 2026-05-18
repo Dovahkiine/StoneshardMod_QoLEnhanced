@@ -1,2 +1,1 @@
-push.s "7;;treasure;史诗;;;;;;;;;;"
-conv.s.v
+7;;treasure;史诗;;;;;;;;;;
