@@ -15,6 +15,8 @@ if (!instance_exists(target))
 if (!instance_exists(owner))
     exit;
 
+var _shock_damage_static = 0;
+
 if (!is_created)
 {
     is_created = true;
@@ -52,11 +54,11 @@ if (!is_created)
             }
         }
         
-        Shock_Damage_Static = math_round((10.5 + owner.WIL * 0.12 + owner.Electromantic_Power * 0.12) * (100 + owner.Electromantic_Power + owner.Magic_Power * 0.5) / (80 - _count));
+        _shock_damage_static = math_round((10.5 + owner.WIL * 0.12 + owner.Electromantic_Power * 0.12) * (100 + owner.Electromantic_Power + owner.Magic_Power * 0.5) / (80 - _count));
     }
     else
     {
-        Shock_Damage_Static = math_round(12 * ((100 + owner.Electromantic_Power) / 100));
+        _shock_damage_static = math_round(12 * ((100 + owner.Electromantic_Power) / 100));
     }
 
 
@@ -108,10 +110,10 @@ if (!is_created)
             }
         }
 
-        other.Shock_Damage_Static *= (1 + (0.1 * _dur));
+        _shock_damage_static *= (1 + (0.1 * _dur));
     }
 
-    Shock_Damage = max(1, math_round(Shock_Damage_Static * random_range(1, 170 + owner.WIL) / 100));
+    Shock_Damage = max(1, math_round(_shock_damage_static * random_range(1, 170 + owner.WIL) / 100));
 
     event_inherited();
     var _dmg = scr_skill_damage(target, false);

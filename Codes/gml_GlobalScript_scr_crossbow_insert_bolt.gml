@@ -60,7 +60,7 @@ function scr_crossbow_insert_bolt(argument0, argument1, argument2)
     {
         with (o_inv_quiver_parent)
         {
-            if((owner.object_index == o_inventory && slot == "bolt") || equipped || (argument1 && is_deactivated))
+            if(slot == "bolt" && (owner.object_index == o_inventory || equipped || (argument1 && is_deactivated)))
             {
                 var _loot_list = ds_map_find_value(data, "lootList");
                 
@@ -85,8 +85,8 @@ function scr_crossbow_insert_bolt(argument0, argument1, argument2)
                         ds_list_delete(_loot_list, 0);
                         _item = __dsDebuggerListDestroy(_item);
                         scr_sort_item_in_container(_loot_list);
+                        _scr_call_method(update_ammo_order);
                     }
-                
                     _ammo_index++;
                 }
                 break;

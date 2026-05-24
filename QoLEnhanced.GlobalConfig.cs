@@ -62,8 +62,8 @@ namespace QoLEnhanced
             // 全面加强地面生物刷新列表强度
             Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_table_surface_spawn.gml"), "gml_GlobalScript_table_surface_spawn");
 
-            // [敌人属性缩放] 根据玩家等级动态调整怪物属性，提升游戏挑战性
-            MslExtensions.QuickInsertBelow("gml_Object_o_mob_point_Other_10", "}", "_scr_scale_enemy_csv_by_level();");
+            // [敌人属性缩放] 在敌人读取参数前按玩家等级刷新怪物属性表，覆盖地牢、地表和事件刷怪
+            Msl.LoadGML("gml_GlobalScript_scr_param").MatchFrom("var _needChange = true").InsertAbove("_scr_scale_enemy_csv_by_level();").Save();
 
             // 调整经验值缩放公式，确保在高等级时仍能获得合理的经验奖励，避免过度惩罚玩家
             Msl.LoadAssemblyAsString("gml_Object_o_enemy_Destroy_0").MatchBelow("pop.v.v local._lvl", 14).ReplaceBy(ModFiles.GetCode("gml_Object_o_enemy_Destroy_0_insert.asm")).Save();
@@ -74,15 +74,9 @@ namespace QoLEnhanced
 
             // [初始属性] 提升新游戏初始能力点 (AP) 0 -> 5
             // 影响: 玩家开局自由度提升，更灵活的属性配置
-            MslExtensions.QuickMatch("gml_GlobalScript_scr_characterMapInit",
-                "ds_map_add(global.characterDataMap, \"AP\", 0)",
-                "ds_map_add(global.characterDataMap, \"AP\", 5);");
-
-            // [初始属性] 提升新游戏初始技能点 (SP) 2 -> 5
-            // 影响: 玩家初期技能学习更加便利
-            MslExtensions.QuickMatch("gml_GlobalScript_scr_characterMapInit",
-                "ds_map_add(global.characterDataMap, \"SP\", 2)",
-                "ds_map_add(global.characterDataMap, \"SP\", 5);");
+            Msl.LoadGML("gml_GlobalScript_scr_characterMapInit").MatchFrom("ds_map_add(global.characterDataMap, \"AP\", 0)")
+            .ReplaceBy("ds_map_add(global.characterDataMap, \"AP\", 5);").MatchFrom("ds_map_add(global.characterDataMap, \"SP\", 2)")
+            .ReplaceBy("ds_map_add(global.characterDataMap, \"SP\", 5);").Save();
 
             // [等级上限] UI 面板修正：将经验条和等级显示的硬上限从 30 提升至 100
             // 目的: 支持更高的角色等级上限，提升长期游玩目标
@@ -99,8 +93,8 @@ namespace QoLEnhanced
             {
                 repeat (2)
                 {
-                    randomize();
                     script_execute(other.loot_script, other.loot_script_key, other.loot_script_tier);
+                    randomize();
                 }
             }");
 
@@ -114,12 +108,21 @@ namespace QoLEnhanced
             global.chain_lightning_count = 0;   // 重置连锁闪电计数
             global.enemy_balance_by_LVL = -1;   // 重置等级缩放缓存
             global.free_turn_consumed = false;  // 新增标记：本回合的免费回合是否已被消费
+            global.qol_dghub_enabled = true;
             if (!variable_global_exists(""got_free_turn""))
                 global.got_free_turn = 0;
             if (!variable_global_exists(""wizzard_turn""))
                 global.wizzard_turn = false;    // 重置约娜免费回合标记
+            if (!variable_global_exists(""agility_chain_turn""))
+                global.agility_chain_turn = 0;  // 连动敌方回合进度槽：<1 继续玩家回合，>=1 放行一次敌方回合
             _scr_scale_enemy_csv_by_level();
             ");
+
+            // [DGHub MVP] 玩家实际掉血后追加一条本地事件，供外部桥接插件读取
+            Msl.LoadGML("gml_GlobalScript_scr_simple_damage")
+                .MatchFrom("scr_characterStatsUpdateMax(\"damageReceivedHighest\", _hit_dmg)")
+                .InsertBelow("_scr_dghub_emit_player_damage(_hit_dmg, _hp, HP, max_hp, other.id);")
+                .Save();
 
             // [整合] o_player_Step_0 全量替换 — 合并等级AP/SP、经验曲线、标记地点导航、免费回合移动消费
             Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_player_Step_0.gml"), "gml_Object_o_player_Step_0");

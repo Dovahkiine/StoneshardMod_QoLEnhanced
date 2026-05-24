@@ -26,7 +26,7 @@ namespace QoLEnhanced
         // 快速匹配并替换 GML 脚本中的字符串
         public static void QuickMatch(string gmlName, string original, string replacement)
         {
-            Msl.LoadGML(gmlName).MatchFrom(original).ReplaceBy(replacement).Peek().Save();
+            Msl.LoadGML(gmlName).MatchFrom(original).ReplaceBy(replacement).Save();
         }
 
         // 快速在指定位置下方进行替换
@@ -70,7 +70,7 @@ namespace QoLEnhanced
         // 在指定位置下方插入文件内容
         public static void QuickInsertBelowFiles(string gmlName, string original, ModFile modFiles, string replacement)
         {
-            Msl.LoadGML(gmlName).Peek().MatchFrom(original).InsertBelow(modFiles, replacement).Save();
+            Msl.LoadGML(gmlName).MatchFrom(original).InsertBelow(modFiles, replacement).Save();
         }
 
         // 在指定位置下方插入文本内容

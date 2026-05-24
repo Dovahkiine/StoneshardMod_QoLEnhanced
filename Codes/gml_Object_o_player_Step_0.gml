@@ -180,7 +180,7 @@ if (comaback && HP >= max_hp)
 if (HP < 1)
 {
     with (o_inv_etnarch_mask)
-        script_execute(execute);
+        _scr_call_method(execute);
 
     var _cd_validate = true;
 

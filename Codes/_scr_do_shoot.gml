@@ -4,6 +4,8 @@
 //_target, _arg2, _missle_sprite, _used_obj, _loot_obj, _initial_speed
 function _scr_do_shoot(argument0, argument1, argument2, argument3, argument4, argument5)
 {
+    if (argument5 == undefined) argument5 = -1;
+
     diss += 100;
 
     if (!instance_exists(argument0))

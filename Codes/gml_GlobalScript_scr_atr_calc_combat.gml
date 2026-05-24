@@ -1,4 +1,4 @@
-function scr_atr_calc_combat() //o_inv_slot 等效于 硬编码4719，但可能存在问题
+function scr_atr_calc_combat(argument0, argument1, argument2) // o_inv_slot 是对象符号；不要用 UMT 导出的硬编码对象 ID 做匹配
 {
     if (!instance_exists(o_inv_left_hand) || !instance_exists(o_inv_right_hand))
         exit;
@@ -37,8 +37,20 @@ function scr_atr_calc_combat() //o_inv_slot 等效于 硬编码4719，但可能�
         Offhand_Efficiency = max(100, Offhand_Efficiency);
     }
     
-    var _mainHandItem = o_inv_right_hand.children;
-    var _offHandItem = o_inv_left_hand.children;
+    var _mainHandItem = (argument0 == undefined) ? noone : argument0;
+    var _offHandItem = (argument1 == undefined) ? noone : argument1;
+    var _both_ranged = (argument2 == undefined) ? false : argument2;
+    
+    if (argument0 == undefined || argument1 == undefined)
+    {
+        var _rh_child = o_inv_right_hand.children;
+        var _lh_child = o_inv_left_hand.children;
+        
+        if (instance_exists(_rh_child))
+            _mainHandItem = _rh_child;
+        if (instance_exists(_lh_child))
+            _offHandItem = _lh_child;
+    }
     var _mainHandDebuff = Mainhand_Efficiency / 100;
     var _offHandDebuff = Offhand_Efficiency / 100;
     
@@ -60,9 +72,8 @@ function scr_atr_calc_combat() //o_inv_slot 等效于 硬编码4719，但可能�
         offHitChance = _off_weapon_hit_chance / _offHandDebuff;
       
     var _hitChance = scr_inv_param("Hit_Chance", o_inv_slot, true) + scr_buff_param("Hit_Chance");
-    var _both_ranged = false;
 
-    if (instance_exists(_mainHandItem) && instance_exists(_offHandItem))
+    if (argument2 == undefined && instance_exists(_mainHandItem) && instance_exists(_offHandItem))
     {
         var _m_r = variable_instance_exists(_mainHandItem, "haveAmmunitionSlot") && _mainHandItem.haveAmmunitionSlot;
         var _o_r = variable_instance_exists(_offHandItem, "haveAmmunitionSlot") && _offHandItem.haveAmmunitionSlot;

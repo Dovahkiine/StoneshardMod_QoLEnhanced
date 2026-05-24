@@ -618,12 +618,12 @@ else
             case "o_skill_chain_lightning":
                 switch (__key)
                 {
-                    case "Shock_Damage": __form = "(8 + (WIL + Electromantic_Power) * 0.2) * (100 + Electromantic_Power + Magic_Power * 0.5) / 100 * (1.7 + WIL * 0.01)"; break;
+                    case "Shock_Damage": __form = "(9 + (WIL + Electromantic_Power) * 0.1) * (225 + Electromantic_Power + Magic_Power * 0.5) * (1.7 + WIL * 0.01) / (350 - Miracle_Power * 0.2)"; break;
                     case "Stagger_Chance": __form = "math_round(50 * ((Magic_Power + Electromantic_Power) / 100))"; break;
                     case "Debuff_Chance": __form = "math_round(80 * ((Magic_Power + Electromantic_Power) / 100))"; break;
-                    case "Base_Damage": __form = "max(1, math_round(_shock_damage * 0.01))"; break;
-                    case "Chain_Lightning_Count": __form = "floor(4 + (WIL * 2 + Miracle_Power * 0.5 + Magic_Power + Electromantic_Power) * 0.04)"; break;
-                    case "Chain_Lightning_Crit": __form = "floor(Chain_Lightning_Count * 1.5)"; break;
+                    case "Base_Damage": __form = "max(1, math_round(_shock_damage_static * 0.01))"; break;
+                    case "Chain_Lightning_Count": __form = "floor(4 + (WIL * 2 + Miracle_Power + Magic_Power + Electromantic_Power - 225) * 0.04)"; break;
+                    case "Chain_Lightning_Crit": __form = "floor(Chain_Lightning_Count * owner.Miracle_Power / 125)"; break;
                 }
             break;
             case "o_skill_cleave":
@@ -928,7 +928,7 @@ else
                     case "Debuff_Chance": __form = "math_round(85 * ((Magic_Power + Electromantic_Power) / 100))"; break;
                     case "Stagger_Chance": __form = "math_round(100 * ((Magic_Power + Electromantic_Power) / 100))"; break;
                     case "Debuff_Knockback": __form = "math_round(15 * ((Magic_Power + Electromantic_Power) / 100))"; break;
-                    case "Debuff_Damage": __form = "math_round((1.8 + (WIL + Electromantic_Power) * 0.025) * (100 + Electromantic_Power) / 75)"; break;
+                    case "Debuff_Damage": __form = "math_round((1.2 + (WIL + Electromantic_Power) * 0.05) * (100 + Electromantic_Power) / 75)"; break;
                     case "AOE_Range": __form = "clamp(1 + floor(((WIL + Electromantic_Power) * 2 + Magic_Power) / 100), 2, 6)"; break;
                     case "Base_Damage": __form = "max(1, math_round(_shock_damage * 0.2))"; break;
                 }
@@ -1399,8 +1399,8 @@ else
                     case "Max_HP_Limit": __form = "floor(50 * (WIL + Magic_Power + Electromantic_Power) / (104 - _count - (WIL + Electromantic_Power) * 0.1))"; break;
                     case "Base_Damage": __form = "max(1, math_round(_shock_damage * 0.01))"; break;
                     case "Free_Turn_Chance": __form = "clamp(Miracle_Chance + (WIL + Electromantic_Power) * 0.5, 0, 100)"; break;
-                    case "Count_Limit": __form = "4 + (WIL + Miracle_Chance + Electromantic_Power) / 40"; break;
-                    case "Count_Crit": __form = "floor(_count_limit * 1.5)"; break;
+                    case "Count_Limit": __form = "floor(4 + (WIL + Miracle_Chance + Electromantic_Power) / 40)"; break;
+                    case "Count_Crit": __form = "floor(4 + (WIL + Miracle_Chance + Electromantic_Power) / 40 * 1.5)"; break;
                 }
             break;
             case "o_skill_throw_acid_bomb":

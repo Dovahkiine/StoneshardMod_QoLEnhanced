@@ -91,9 +91,7 @@ namespace QoLEnhanced
 
             // [大篷车保鲜] 如果马车开启了香料升级，使马车仓库内的食物腐败速度大幅降低 (0.005x)
             // 目的: 鼓励投资大篷车升级，建立长期资源积累系统
-            MslExtensions.QuickMatch("gml_GlobalScript_scr_consum_food_change",
-                "argument0 *= 0.5",
-                "argument0 *= 0.001");
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_scr_consum_food_change.gml"), "gml_GlobalScript_scr_consum_food_change");
 
             MslExtensions.QuickMatchFromUntil("gml_Object_o_hoverConsum_Other_20", "var _freshValue", "other.freshColor", @"
             if (_fresh > 24)

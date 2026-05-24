@@ -1,0 +1,1 @@
+Chain_Turn;Шанс неудачи;Chain Turn;连动;Patzerchance;Probabilidad de golpe débil;Chance de Maladresse;Prob. di Tentennamento;Chance de Atrapalhar-se;Szansa na porażkę;Iskalama Şansı;ファンブル率;실책률;

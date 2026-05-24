@@ -1,29 +1,36 @@
 function scr_inv_weapon_get_hands(argument0) {
+    qol_big_weapon_sprite = false;
+
     // 先根据武器类型设置基础属性
     switch (argument0) {
         case "2hsword":
-            character_sprite_hands = 2;
+            character_sprite_hands = 1;
             hands = 1;
+            qol_big_weapon_sprite = true;
             break;
             
         case "2haxe":
-            character_sprite_hands = 2;
+            character_sprite_hands = 1;
             hands = 1;
+            qol_big_weapon_sprite = true;
             break;
 
         case "2hmace":
-            character_sprite_hands = 2;
+            character_sprite_hands = 1;
             hands = 1;
+            qol_big_weapon_sprite = true;
             break;
 
         case "2hStaff":
-            character_sprite_hands = 2;
+            character_sprite_hands = 1;
             hands = 1;
+            qol_big_weapon_sprite = true;
             break;
 
         case "crossbow":
-            character_sprite_hands = 2;
+            character_sprite_hands = 1;
             hands = 1;
+            qol_big_weapon_sprite = true;
             haveAmmunitionSlot = true;
             ammunitionType = "bolt";
             isCrossbow = true;
@@ -45,8 +52,9 @@ function scr_inv_weapon_get_hands(argument0) {
             break;
 
         case "spear":
-            character_sprite_hands = 2;
+            character_sprite_hands = 1;
             hands = 1;
+            qol_big_weapon_sprite = true;
             break;
 
         default:
@@ -75,16 +83,19 @@ function scr_inv_weapon_get_hands(argument0) {
         case "Pickaxe":
             character_sprite_hands = 1;
             hands = 1;
+            qol_big_weapon_sprite = true;
             break;
 
         case "Broom":
             character_sprite_hands = 1;
             hands = 1;
+            qol_big_weapon_sprite = true;
             break;
 
         case "Shackles":
             character_sprite_hands = 1;
             hands = 1;
+            qol_big_weapon_sprite = true;
             break;
     }
 }

@@ -59,23 +59,12 @@ namespace QoLEnhanced
             else
                 sprite_index = s_inventory_540_rusty10x7").Save();
 
-            // [交易界面切换] 打开 o_inventory 时根据 image_index 选择贴图
-            // image_index=1 表示马车存储箱模式（由 o_inventory_categories_menu_Other_11 设置）
+            // [交易界面切换] 打开 o_inventory 时恢复物品栏精灵
             Msl.LoadGML("gml_Object_o_inventory_Other_11").MatchFrom("scr_escapeButtonListAdd()").InsertBelow(@"
-            if (image_index == 1)
-            {
-                if (global.cameraHeight >= 720)
-                    sprite_index = s_stash_trade_inventory_720_10x7
-                else
-                    sprite_index = s_stash_trade_540_rusty10x7
-            }
+            if (global.cameraHeight >= 720)
+                sprite_index = s_inventory_720_12x11
             else
-            {
-                if (global.cameraHeight >= 720)
-                    sprite_index = s_inventory_720_12x11
-                else
-                    sprite_index = s_inventory_540_rusty10x7
-            }").Save();
+                sprite_index = s_inventory_540_rusty10x7").Save();
 
             Msl.LoadGML("gml_Object_o_trade_inventory_Create_0").MatchFrom("event_inherited()").InsertBelow(@"
             if (global.cameraHeight >= 720)
@@ -91,15 +80,10 @@ namespace QoLEnhanced
 
             Msl.LoadGML("gml_Object_o_stash_inventory_right_Create_0").MatchFrom("closeLeftMenu = true").InsertBelow(@"
             if (global.cameraHeight >= 720)
-            {
                 sprite_index = s_stash_trade_inventory_720_10x7
-                with (mask) { sprite_index = other.sprite_index }
-            }
             else
-            {
                 sprite_index = s_stash_trade_540_rusty10x7
-                with (mask) { sprite_index = other.sprite_index }
-            }").Save();
+            with (mask) { sprite_index = other.sprite_index }").Save();
 
             #endregion
         }

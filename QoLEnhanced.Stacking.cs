@@ -49,9 +49,9 @@ namespace QoLEnhanced
 
             // [堆叠逻辑] 修正合并、拆分、查找空位的脚本，支持高额堆叠
             // 目的: 确保所有堆叠逻辑都能支持新的上限
-            MslExtensions.QuickMatchAll("gml_GlobalScript_scr_inventory_stack", ModFiles, "gml_GlobalScript_scr_inventory_stack.gml");
-            MslExtensions.QuickMatchAll("gml_GlobalScript_scr_inv_find_free_cell", ModFiles, "gml_GlobalScript_scr_inv_find_free_cell.gml");
-            MslExtensions.QuickMatchAll("gml_GlobalScript_scr_item_stack_build", ModFiles, "gml_GlobalScript_scr_item_stack_build.gml");
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_scr_inventory_stack.gml"), "gml_GlobalScript_scr_inventory_stack");
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_scr_inv_find_free_cell.gml"), "gml_GlobalScript_scr_inv_find_free_cell");
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_scr_item_stack_build.gml"), "gml_GlobalScript_scr_item_stack_build");
 
             #endregion
         }

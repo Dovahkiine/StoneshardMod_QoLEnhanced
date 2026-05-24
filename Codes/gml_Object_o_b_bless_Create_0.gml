@@ -1,0 +1,11 @@
+event_inherited();
+stack = 1;
+max_duration = 1200;
+scr_buff_atr();
+save_counter = 0;
+stage = 1;
+max_stage = 3;
+have_duration = false;
+draw_duration = false;
+have_stages = true;
+defense_boost = 0;

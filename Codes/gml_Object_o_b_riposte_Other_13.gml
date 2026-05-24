@@ -1,3 +1,32 @@
+event_inherited();
+
+if (attack_result == "block" || attack_result == "fumbleBlock" || attack_result == "critBlock")
+{
+    if (is_player(target))
+    {
+        with (o_skill_riposte_ico)
+        {
+            repeat (2)
+            {
+                scr_map_kd_decrease();
+
+                with (child_skill)
+                    scr_map_kd_decrease();
+            }
+        }
+    }
+    else
+    {
+        with (target)
+            scr_skill_change_KD_enemy("Riposte", -2);
+    }
+
+    scr_temp_incr_atr("Block_Recovery", 10, 3, target, target);
+
+    with (target)
+        scr_guiAnimation_ext(x, y, s_riposite_part, 1, 1, 1, 16777215, 0);
+}
+
 // ================================================================
 //  Other_13 — 被攻击时触发（event_user(3) 来自 scr_damage）
 //  可用变量: damage（防御削减后的 net 伤害）/ attacker / attack_result / add_damage / target
@@ -11,19 +40,16 @@
 // ================================================================
 if (is_riposte_ready && !is_execute && instance_exists(attacker))
 {
-    // ---- 从 target（buff 持有者/玩家）读取防御削减前的原始伤害 ----
     var _raw = 0;
     if (instance_exists(target))
         _raw = target.__qol_riposte_raw;
 
     if (_raw > 0)
     {
-        // ---- 方向判定 ----
         var _blocked = true;
 
         if (riposte_direction >= 0 && riposte_direction <= 7)
         {
-            // 计算攻击者相对于玩家所处的 8 方向索引
             var _angle = point_direction(target.x, target.y, attacker.x, attacker.y);
             var _attack_dir = (round(_angle / 45) mod 8);
             _blocked = (_attack_dir == riposte_direction);
@@ -31,22 +57,33 @@ if (is_riposte_ready && !is_execute && instance_exists(attacker))
 
         if (_blocked)
         {
-            // ---- 记录原始伤害供 Alarm_0 反击使用 ----
             raw_absorbed_damage = _raw;
-
-            // ---- 完全免疫本次实际扣血：令 scr_damage 的 arg1 += add_damage 后归零 ----
             add_damage = -damage;
-
-            // ---- 记录反击目标 ----
-            counter_target   = attacker;
-            is_execute       = true;
+            counter_target = attacker;
+            is_execute = true;
             is_riposte_ready = false;
 
-            // ---- 视觉反馈：金色 = 精准格挡成功 ----
             with (target)
-                scr_guiAnimation_ext(x, y, 359, 1, 1, 1, c_yellow, 0);
+            {
+                with (scr_guiAnimation_ext(x, y, s_riposite_part, 1, 0.75, 1, c_yellow, 0))
+                {
+                    image_blend = c_yellow;
+                    image_xscale = 1.35;
+                    image_yscale = 1.35;
+                    depth_offset = -3;
+                    scale_update = false;
+                }
 
-            // ---- 1 step 后执行反击（等待 scr_damage 的 buff 遍历完全结束）----
+                with (scr_guiAnimation_ext(x, y - 6, s_riposite_part, 1, 0.9, 1, make_color_rgb(255, 244, 160), 0))
+                {
+                    image_blend = make_color_rgb(255, 244, 160);
+                    image_xscale = 1.65;
+                    image_yscale = 1.65;
+                    depth_offset = -4;
+                    scale_update = false;
+                }
+            }
+
             alarm[0] = 1;
         }
     }

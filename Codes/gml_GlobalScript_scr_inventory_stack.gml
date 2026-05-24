@@ -191,7 +191,7 @@ function scr_inventory_stack(argument0, argument1, argument2, argument3, argumen
                             if (object_is(object_index, o_inv_sling_ammo_quiver_parent))
                                 scr_sort_sling_quiver(_lootList, cells_x_size * 2);
                             
-                            script_execute(update_ammo_order);
+                            _scr_call_method(update_ammo_order);
                         }
                     }
                 }

@@ -10,12 +10,12 @@ if (!is_execute && instance_exists(owner) && instance_exists(target))
             instance_destroy();
     }
 
-    count_limit = 4 + (owner.WIL + owner.Miracle_Chance + owner.Electromantic_Power) / 40;
+    var _count_limit = 4 + (owner.WIL + owner.Miracle_Chance + owner.Electromantic_Power) / 40;
 
     if (_is_player_owner && scr_chance_value(owner.Miracle_Chance + (owner.WIL + owner.Electromantic_Power) * 0.5))
     {
         global.got_free_turn++;
-        count_limit = count_limit * 1.5;
+        _count_limit = _count_limit * 1.5;
     }
 
     is_execute = true;
@@ -43,7 +43,7 @@ if (!is_execute && instance_exists(owner) && instance_exists(target))
                     {
                         array_push(_target_array, id);
                     }
-                    else if (_count < count_limit)
+                    else if (_count < _count_limit)
                     {
                         array_push(_target_array, id);
                         _count++;

@@ -15,7 +15,7 @@ function scr_consum_hilda_enchant_assign(argument0)
         
         case o_inv_troll_gland:
             _attribute_name = "Damage_Received";
-            _attribute_value = -min(4.5 + (0.85 * scr_atr("YoungTrollKills", 0)), 30);
+            _attribute_value = -min(4.5 + (0.85 * scr_atr("YoungTrollKills", 0)), 20);
             break;
         
         case o_inv_bear_fat:
@@ -45,12 +45,12 @@ function scr_consum_hilda_enchant_assign(argument0)
         
         case o_inv_horns_saiga:
             _attribute_name = "max_mp";
-            _attribute_value = min(2 + (0.5 * scr_atr("DeerSaigaKills", 0)), 8);
+            _attribute_value = min(2 + (0.5 * scr_atr("DeerSaigaKills", 0)), 30);
             break;
         
         case o_inv_wolf_tongue:
             _attribute_name = "Abilities_Energy_Cost";
-            _attribute_value = -min(2 + (0.6 * scr_atr("WolfKills", 0)), 8);
+            _attribute_value = -min(2 + (0.6 * scr_atr("WolfKills", 0)), 25);
             break;
         
         case o_inv_moose_kidney:

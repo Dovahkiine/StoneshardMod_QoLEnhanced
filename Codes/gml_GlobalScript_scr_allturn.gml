@@ -5,8 +5,9 @@ function scr_allturn(argument0)
     global.chain_lightning_count = 0;
     global.wizzard_turn = false;
     global.free_turn_consumed = false; // 每次进入 scr_allturn 都重置免费回合消费标记，确保每个回合都能正确处理免费回合逻辑
+    
     with (o_player) {
-        if(scr_chance_value(100 - 100 * power(0.975, AGL - 10)))
+        if(scr_chance_value(100 - 100 * power(0.98, AGL - 10)))
             global.got_free_turn++;
     }
 

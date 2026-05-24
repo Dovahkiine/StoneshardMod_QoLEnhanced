@@ -40,7 +40,7 @@ function scr_atr_calc(argument0, argument1)
                 STR = clamp(bSTR + _str, 2, 200);
                 AGL = clamp(bAGL + _agl, 2, 180);
                 PRC = clamp(bPRC + _prc, 2, 180);
-                Vitality = clamp(bVIT + _vit, 2, 200);
+                Vitality = clamp(bVIT + _vit, 2, 300);
                 WIL = clamp(bWIL + _will, 2, 200);
                 Avoiding_Trap = bAvoiding_Trap;
                 Bonus_Range = scr_buff_param("Bonus_Range");
@@ -126,7 +126,7 @@ function scr_atr_calc(argument0, argument1)
                 VSN = clamp((bVSN + scr_buff_param("VSN")) * (1 + (VSN_Bonus / 100)), 0, 15);
                 currentVSN = clamp(VSN + scr_buff_param("currentVSN"), 0, 15);
                 hear_value = clamp(bhear_value + scr_buff_param("HEAR"), 0, 1);
-                morale_factor = clamp(bmorale_factor + scr_buff_param("Morale_Factor") + (WIL + PRC + Vitality) * 5, 0, 1000); // QoL: WIL/PRC/Vitality 传导士气，最高 200→1000
+                morale_factor = clamp(bmorale_factor + scr_buff_param("Morale_Factor") + (WIL + PRC + Vitality) * 8, 0, 2000); // QoL: WIL/PRC/Vitality 传导士气，最高 200→1000
                 Hit_Chance = clamp(bHit_Chance + scr_buff_param("Hit_Chance") + AGL * 1.5, 5, 300); // QoL: AGL 传导命中，上限 150→300
                 Spell_Hit_Chance = clamp(bSpell_Hit_Chance + scr_buff_param("Spell_Hit_Chance") + PRC * 1.5, 5, 300); // QoL: PRC 传导法术命中
                 Magic_Power = clamp(bMagic_Power + scr_buff_param("Magic_Power") + WIL * 2, 25, 500); // QoL: WIL 传导法力伤害，上限 300→500
@@ -148,7 +148,7 @@ function scr_atr_calc(argument0, argument1)
                     var _total_attributes = STR + AGL + Vitality + PRC + WIL; // QoL: 五维属性总和影响伤害增减
                     Lifesteal = bLifesteal + scr_buff_param("Lifesteal") + (STR + AGL + Vitality + PRC + WIL) * 0.01; // QoL: 五维属性总和传导生命偷取
                     Manasteal = bManasteal + scr_buff_param("Manasteal") + (STR + AGL + Vitality + PRC + WIL) * 0.01; // QoL: 五维属性总和传导法力偷取
-                    Damage_Received = clamp((bDamage_Received + scr_buff_param("Damage_Received")) * power(0.99, _total_attributes/1.5), 5, 200); // QoL: 五维之和降低受伤
+                    Damage_Received = clamp((bDamage_Received + scr_buff_param("Damage_Received")) * power(0.99, _total_attributes / 1.5), 5, 200); // QoL: 五维之和降低受伤
                     Damage_Returned = clamp(bDamage_Returned + scr_buff_param("Damage_Returned"), 0, 100);
                     Pyromantic_Power = scr_buff_param("Pyromantic_Power") + bPyromantic_Power;
                     Geomantic_Power = scr_buff_param("Geomantic_Power") + bGeomantic_Power;
@@ -422,10 +422,35 @@ function scr_atr_calc(argument0, argument1)
             Abilities_Energy_Cost = clamp(_costWill + scr_inv_buff_atr("Abilities_Energy_Cost"), 1, 300);
             Cooldown_Reduction = clamp(_costWill + scr_inv_buff_atr("Cooldown_Reduction"), 1, 200);
             Pain_Resistance = clamp(scr_inv_buff_atr("Pain_Resistance") + (_bonusWIL * 7.5), -100, 300);
+            var _mainHandItem = noone;
+            var _offHandItem = noone;
+            var _both_ranged = false;
+
+            if (instance_exists(o_inv_right_hand))
+            {
+                var _rh_child = o_inv_right_hand.children;
+                if (instance_exists(_rh_child) && _rh_child.equipped)
+                    _mainHandItem = _rh_child;
+            }
+            if (instance_exists(o_inv_left_hand))
+            {
+                var _lh_child = o_inv_left_hand.children;
+                if (instance_exists(_lh_child) && _lh_child.equipped)
+                    _offHandItem = _lh_child;
+            }
+                
+            if (instance_exists(_mainHandItem) && instance_exists(_offHandItem))
+            {
+                var _m_r = variable_instance_exists(_mainHandItem, "haveAmmunitionSlot") && _mainHandItem.haveAmmunitionSlot;
+                var _o_r = variable_instance_exists(_offHandItem, "haveAmmunitionSlot") && _offHandItem.haveAmmunitionSlot;
+                _both_ranged = _m_r && _o_r;
+            }
+
             Swimming_Cost = clamp(2 + _weight + scr_inv_buff_atr("Swimming_Cost"), 0, 100);
-            scr_atr_calc_combat();
+            scr_atr_calc_combat(_mainHandItem, _offHandItem, _both_ranged);
             scr_def_calc(isPlayer);
-            range = math_round(max(1, ceil(scr_inv_param("Range"))) * ((100 + Bonus_Range) / 100));
+
+            range = _both_ranged ? math_round(max(1, ceil(scr_inv_param("Range") / 2)) * (100 + Bonus_Range) / (100 - _bonusPRC)) : math_round(max(1, ceil(scr_inv_param("Range"))) * (100 + Bonus_Range) / (100 - _bonusPRC));
             
             if (!scr_is_weapon_type_shooting())
                 range = 1;

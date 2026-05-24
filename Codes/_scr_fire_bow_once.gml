@@ -7,6 +7,7 @@
 function _scr_fire_bow_once(argument0, argument1, argument2, argument3)
 {
     if (argument2 == undefined) argument2 = o_inv_right_hand; // 是否强制从箭袋取弹（不检查装备的弹药槽）
+    if (argument3 == undefined) argument3 = -1;
     var _missle_sprite = -1;
     var _used_obj      = -1;
     var _loot_obj      = o_loot_arrows;
@@ -113,7 +114,7 @@ function _scr_fire_bow_once(argument0, argument1, argument2, argument3)
                             else
                                 scr_sort_item_in_container(_loot_list);
 
-                            script_execute(update_ammo_order);
+                            _scr_call_method(update_ammo_order);
                         }
 
                         _got_ammo = true;

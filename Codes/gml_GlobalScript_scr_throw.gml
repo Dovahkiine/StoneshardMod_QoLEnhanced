@@ -6,11 +6,12 @@
 //    · 在玩家分支新增双持路由（A/B/C），统一通过 _scr_do_shoot 发射
 //    · 修复了修改版中 argument2 默认值从 -4 改成 -2 导致的 bug
 // ================================================================
-function scr_throw(argument0, argument1, argument2)
+function scr_throw(argument0, argument1, argument2, argument3)
 {
     if (argument0 == undefined) argument0 = other.id;
     if (argument1 == undefined) argument1 = true;
     if (argument2 == undefined) argument2 = -4;
+    if (argument3 == undefined) argument3 = 0;
 
     if (!argument0 || !instance_exists(argument0))
         return 0;
@@ -57,6 +58,14 @@ function scr_throw(argument0, argument1, argument2)
         var _missleSprite = arrowTypeSprite;
         var _usedObject   = arrowTypeUsed;
         var _lootObject   = o_loot_arrows;
+        var _qol_pierce_mode = (argument3 != 0);
+
+        if (is_player())
+        {
+            __qol_throw_arrows = [];
+            __qol_throw_mode = "";
+            __qol_throw_crossbow_loaded = false;
+        }
 
         // ================================================================
         //  敌方逻辑 — 与原版完全一致，不做任何修改
@@ -129,6 +138,55 @@ function scr_throw(argument0, argument1, argument2)
             // ================================================================
             if (_lh_type == "crossbow" && _rh_type == "crossbow")
             {
+                if (_qol_pierce_mode)
+                {
+                    if (scr_crossbow_is_armed(o_inv_right_hand) != 1 || scr_crossbow_is_armed(o_inv_left_hand) != 1)
+                    {
+                        scr_crossbow_insert_bolt(false, false, false);
+                    }
+
+                    if (scr_crossbow_is_armed(o_inv_right_hand) != 1 || scr_crossbow_is_armed(o_inv_left_hand) != 1)
+                    {
+                        return -5;
+                    }
+
+                    var _right_bolt = _scr_extract_crossbow_bolt(o_inv_right_hand);
+                    var _left_bolt  = _scr_extract_crossbow_bolt(o_inv_left_hand);
+
+                    if (_right_bolt == noone || _left_bolt == noone)
+                    {
+                        return -5;
+                    }
+
+                    if (_right_bolt != noone)
+                    {
+                        arrow = _scr_do_shoot(argument0, argument2, _right_bolt[0], _right_bolt[1], _right_bolt[2]);
+                        if (arrow != noone && arrow != -4)
+                            array_push(__qol_throw_arrows, arrow);
+                    }
+
+                    if (_left_bolt != noone)
+                    {
+                        var _left_arrow = _scr_do_shoot(argument0, argument2, _left_bolt[0], _left_bolt[1], _left_bolt[2], 0);
+                        if (_left_arrow != noone && _left_arrow != -4)
+                        {
+                            arrow = _left_arrow;
+                            array_push(__qol_throw_arrows, _left_arrow);
+                        }
+                    }
+
+                    if (arrow == -4)
+                    {
+                        scr_crossbow_insert_bolt();
+                        return -5;
+                    }
+
+                    __qol_throw_mode = "pierce_dual_crossbow";
+                    __qol_throw_crossbow_loaded = true;
+                    predictor = false;
+                }
+                else
+                {
                 if (!variable_instance_exists(id, "crossbow_shoot_turn"))
                     crossbow_shoot_turn = 0;
 
@@ -147,6 +205,8 @@ function scr_throw(argument0, argument1, argument2)
                     }
 
                     arrow     = _scr_do_shoot(argument0, argument2, _bolt_res[0], _bolt_res[1], _bolt_res[2]);
+                    if (arrow != noone && arrow != -4)
+                        array_push(__qol_throw_arrows, arrow);
                     predictor = false;
                 }
                 else
@@ -162,6 +222,8 @@ function scr_throw(argument0, argument1, argument2)
                     }
 
                     arrow     = _scr_do_shoot(argument0, argument2, _bolt_res_b[0], _bolt_res_b[1], _bolt_res_b[2]);
+                    if (arrow != noone && arrow != -4)
+                        array_push(__qol_throw_arrows, arrow);
                     predictor = false;
 
                     // 免费装填上一回合发射过的弩（不推进回合）
@@ -172,6 +234,7 @@ function scr_throw(argument0, argument1, argument2)
                 }
 
                 crossbow_shoot_turn = 1 - crossbow_shoot_turn;
+                }
             }
 
             // ================================================================
@@ -191,6 +254,57 @@ function scr_throw(argument0, argument1, argument2)
                 else
                     _fire_slot = o_inv_left_hand;
 
+                if (_qol_pierce_mode)
+                {
+                    var _bow_arrow_skill = _scr_fire_bow_once(argument0, argument2, _fire_slot);
+                    if (_bow_arrow_skill != noone && _bow_arrow_skill != -4)
+                    {
+                        arrow = _bow_arrow_skill;
+                        array_push(__qol_throw_arrows, _bow_arrow_skill);
+                    }
+
+                    var _cross_slot_skill = o_inv_right_hand;
+
+                    if (_lh_type == "crossbow")
+                        _cross_slot_skill = o_inv_left_hand;
+
+                    var _bolt_skill = _scr_extract_crossbow_bolt(_cross_slot_skill);
+                    if (_bolt_skill != noone)
+                    {
+                        var _cross_arrow_skill = _scr_do_shoot(argument0, argument2, _bolt_skill[0], _bolt_skill[1], _bolt_skill[2], 0);
+                        if (_cross_arrow_skill != noone && _cross_arrow_skill != -4)
+                        {
+                            arrow = _cross_arrow_skill;
+                            array_push(__qol_throw_arrows, _cross_arrow_skill);
+                        }
+                        __qol_throw_crossbow_loaded = true;
+                    }
+                    else
+                    {
+                        scr_crossbow_insert_bolt(false, false, false);
+                    }
+
+                    if (arrow == -4)
+                        return -5;
+
+                    if (array_length(__qol_throw_arrows) > 1)
+                    {
+                        for (var _qol_i = 0; _qol_i < array_length(__qol_throw_arrows) - 1; _qol_i++)
+                        {
+                            var _qol_arrow = __qol_throw_arrows[_qol_i];
+                            if (_qol_arrow != noone && _qol_arrow != -4 && instance_exists(_qol_arrow))
+                            {
+                                with (_qol_arrow)
+                                    skip_turn = false;
+                            }
+                        }
+                    }
+
+                    __qol_throw_mode = "pierce_mixed";
+                    predictor = false;
+                }
+                else
+                {
                 if (!variable_instance_exists(id, "mixed_attack_turn"))
                     mixed_attack_turn = false;
 
@@ -199,10 +313,17 @@ function scr_throw(argument0, argument1, argument2)
                     // 不是十字弩的那只手先射击
                     var _bow_arrow = _scr_fire_bow_once(argument0, argument2, _fire_slot);
                     if (_bow_arrow != noone && _bow_arrow != -4)
+                    {
                         arrow = _bow_arrow;
+                        array_push(__qol_throw_arrows, _bow_arrow);
+                    }
 
                     // 十字弩若已装填则同时射出
-                    var _cslot    = (_lh_type == "crossbow") ? o_inv_left_hand : o_inv_right_hand;
+                    var _cslot    = o_inv_right_hand;
+
+                    if (_lh_type == "crossbow")
+                        _cslot = o_inv_left_hand;
+
                     var _cbolt    = _scr_extract_crossbow_bolt(_cslot);
                     var _cross_arrow = -4;
                     if (_cbolt != noone)
@@ -210,7 +331,10 @@ function scr_throw(argument0, argument1, argument2)
                         // 射出十字弩箭（若有）
                         _cross_arrow = _scr_do_shoot(argument0, argument2, _cbolt[0], _cbolt[1], _cbolt[2], 0);
                         if (_cross_arrow != noone && _cross_arrow != -4)
+                        {
                             arrow = _cross_arrow;
+                            array_push(__qol_throw_arrows, _cross_arrow);
+                        }
                     }
                     else
                         scr_crossbow_insert_bolt(false, false, false);
@@ -219,6 +343,12 @@ function scr_throw(argument0, argument1, argument2)
                         // 双手都无弹药：弩完成免费装填，回合计数归位为0
                         mixed_attack_turn = !mixed_attack_turn;
                         return -5;
+                    }
+
+                    if (_bow_arrow != noone && _bow_arrow != -4 && _cross_arrow != noone && _cross_arrow != -4)
+                    {
+                        with (_bow_arrow)
+                            skip_turn = false;
                     }
 
                     // _bow_arrow 已通过 _scr_do_shoot 内部 event_perform 触发
@@ -232,6 +362,7 @@ function scr_throw(argument0, argument1, argument2)
                     if (_bow_arrow2 != noone && _bow_arrow2 != -4)
                     {
                         arrow = _bow_arrow2;
+                        array_push(__qol_throw_arrows, _bow_arrow2);
                         // 弩免费装填
                         scr_crossbow_insert_bolt(false, false, false);
                         predictor = false;
@@ -247,6 +378,7 @@ function scr_throw(argument0, argument1, argument2)
                 }
 
                 mixed_attack_turn = !mixed_attack_turn;
+                }
             }
 
             // ================================================================
@@ -256,13 +388,35 @@ function scr_throw(argument0, argument1, argument2)
             else if (_rh_type == "range weapons right" && _lh_type == "range weapons left")
             {
                 var _arr1 = _scr_fire_bow_once(argument0, argument2, o_inv_right_hand);
-                var _arr2 = _scr_fire_bow_once(argument0, argument2, o_inv_left_hand, 0);
+                var _arr2 = noone;
 
-                if (_arr1 != noone && _arr1 != -4) arrow = _arr1;
-                if (_arr2 != noone && _arr2 != -4) arrow = _arr2;
+                if (!_qol_pierce_mode || argument3 == 2)
+                    _arr2 = _scr_fire_bow_once(argument0, argument2, o_inv_left_hand, 0);
+
+                if (_arr1 != noone && _arr1 != -4)
+                {
+                    arrow = _arr1;
+                    array_push(__qol_throw_arrows, _arr1);
+                }
+                if (_arr2 != noone && _arr2 != -4)
+                {
+                    arrow = _arr2;
+                    array_push(__qol_throw_arrows, _arr2);
+                }
 
                 if (arrow == -4)
                     return -5;   // 双手都没弹药
+
+                if (!_qol_pierce_mode && _arr1 != noone && _arr1 != -4 && _arr2 != noone && _arr2 != -4)
+                {
+                    with (_arr1)
+                        skip_turn = false;
+                }
+
+                if (_qol_pierce_mode)
+                    __qol_throw_mode = "pierce_dual_ranged";
+                else
+                    __qol_throw_mode = "dual_ranged";
 
                 // _arr1 已通过 _scr_do_shoot 内部 event_perform 触发
                 // _arr2 已传入 speed=0 → _scr_do_shoot 自动设置 alarm[1]=4 延迟出发
@@ -303,6 +457,8 @@ function scr_throw(argument0, argument1, argument2)
                     }
 
                     arrow = _scr_do_shoot(argument0, argument2, _bolt_res[0], _bolt_res[1], _bolt_res[2]);
+                    if (arrow != noone && arrow != -4)
+                        array_push(__qol_throw_arrows, arrow);
                 }
                 else
                 {
@@ -310,7 +466,10 @@ function scr_throw(argument0, argument1, argument2)
                     var _bow_arr = _scr_fire_bow_once(argument0, argument2, _fire_slot);
 
                     if (_bow_arr != noone && _bow_arr != -4)
+                    {
                         arrow = _bow_arr;
+                        array_push(__qol_throw_arrows, _bow_arr);
+                    }
                     else
                         return -5;
 
@@ -411,7 +570,7 @@ function scr_throw(argument0, argument1, argument2)
                                     else
                                         scr_sort_item_in_container(_loot_list);
 
-                                    script_execute(update_ammo_order);
+                                    _scr_call_method(update_ammo_order);
                                 }
 
                                 predictor = true;
@@ -469,6 +628,10 @@ function scr_throw(argument0, argument1, argument2)
                     else
                         scr_audio_play_at(choose(snd_sling_shot_1, snd_sling_shot_2, snd_sling_shot_3, snd_sling_shot_4));
                 }
+
+                arrow = _arrow_inst;
+                if (is_player() && _arrow_inst != noone && _arrow_inst != -4)
+                    array_push(__qol_throw_arrows, _arrow_inst);
             }
 
             if (is_player())

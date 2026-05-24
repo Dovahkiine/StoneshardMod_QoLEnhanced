@@ -1,21 +1,38 @@
 event_user(1);
 var _stagger_chance = 0;
 var _resonance_chance = 0;
+var _chain_lightning_count = 6;
+var _shock_damage_static = 0;
 
 if (live_call())
     return global.live_result;
 
 if (instance_exists(owner))
 {
-    chain_lightning_bonus = 4 + (owner.WIL * 2 + owner.Miracle_Power * 0.5 + owner.Magic_Power + owner.Electromantic_Power) * 0.04;
-    chain_lightning_bonus = is_crit ? chain_lightning_bonus * 1.5 : chain_lightning_bonus;
-    Shock_Damage_Static = (8 + (owner.WIL + owner.Electromantic_Power) * 0.2) * (100 + owner.Electromantic_Power + owner.Magic_Power * 0.5) / 100;
-    Shock_Damage = max(1, math_round(Shock_Damage_Static * random_range(1, 170 + owner.WIL) / 100));
-    _stagger_chance = math_round(50 * (owner.Magic_Power + owner.Electromantic_Power) / 100);
-    _resonance_chance = math_round(80 * (owner.Magic_Power + owner.Electromantic_Power) / 100);
-    
-    if (is_crit)
-        _stagger_chance *= max(1, owner.Miracle_Power / 100);
+    with (owner)
+    {
+        if (is_player())
+        {
+            _chain_lightning_count = 4 + (WIL * 2 + Miracle_Power + Magic_Power + Electromantic_Power - 225) * 0.04;
+            _shock_damage_static = (9 + (WIL + Electromantic_Power) * 0.1) * (225 + Electromantic_Power + Magic_Power) / (350 - Miracle_Power * 0.2);
+            other.Shock_Damage = max(1, math_round(_shock_damage_static * random_range(1, 170 + WIL) / 100));
+        }
+        else
+        {
+            _shock_damage_static = 10 * (100 + Electromantic_Power + Magic_Power * 0.5) / 100;
+            other.Shock_Damage = max(1, math_round(_shock_damage_static * random_range(1, 155 + WIL * 0.5) / 100));
+        }
+        
+        _stagger_chance = math_round(50 * (Magic_Power + Electromantic_Power) / 100);
+        _resonance_chance = math_round(80 * (Magic_Power + Electromantic_Power) / 100);
+
+        if (other.is_crit)
+        {
+            _stagger_chance *= max(1, Miracle_Power / 100);
+            _resonance_chance *= max(1, Miracle_Power / 100);
+            _chain_lightning_count *= Miracle_Power / 125;
+        }
+    }
 }
 
 event_inherited();
@@ -53,7 +70,7 @@ if (!is_shield_block)
             if (scr_chance_value(_resonance_chance - target.Shock_Resistance))
                 scr_effect_create(o_db_resonance, 4, target, owner);
             
-            scr_skill_category_change_KD(o_skill_category_electromancy, 2);
+            scr_skill_category_change_KD(o_skill_category_electromancy, 1);
         }
         
         scr_skill_electromancy_water(target, Shock_Damage / 2);
@@ -68,7 +85,7 @@ with (o_unit)
     {
         var _distance = scr_tile_distance(id, other.target);
 
-        if (_distance < 21)
+        if (_distance < 16)
             array_push(_target_array, id, _distance);
     }
 }
@@ -77,18 +94,28 @@ var _min_distance = 100;
 var _target = -4;
 var _size = array_length(_target_array);
 var _boogaloCounter = 0;
+var _weighted_target = -4;
+var _total_weight = 0;
 
 for (var i = 0; i < _size; i += 2)
 {
+    var _candidate = _target_array[i];
     var _distance = _target_array[i + 1];
     
     if (_distance < _min_distance)
     {
-        _target = _target_array[i];
+        _target = _candidate;
         _min_distance = _distance;
     }
     
-    with (_target_array[i])
+    var _weight_distance = max(1, _distance);
+    var _weight = 1 / (_weight_distance * _weight_distance);
+    _total_weight += _weight;
+    
+    if (random(_total_weight) < _weight)
+        _weighted_target = _candidate;
+    
+    with (_candidate)
     {
         var _ballighting = instance_nearest(x, y, o_ball_lightning);
         
@@ -100,6 +127,12 @@ for (var i = 0; i < _size; i += 2)
                 _boogaloCounter++;
         }
     }
+}
+
+if (_target && !scr_chance_value(40) && _weighted_target)
+{
+    // 40% 保持最近目标；其余概率按距离平方反比抽取，近处更容易成为下一个弹射目标。
+    _target = _weighted_target;
 }
 
 if (_boogaloCounter >= 2)
@@ -114,7 +147,7 @@ repeat (8 + random(4))
     }
 }
 
-if (_target && global.chain_lightning_count < chain_lightning_bonus)
+if (_target && global.chain_lightning_count < _chain_lightning_count)
 {
     global.chain_lightning_count++;
     
@@ -129,6 +162,8 @@ if (_target && global.chain_lightning_count < chain_lightning_bonus)
         target = _target;
         is_flying = false;
         var _pointCenter = scr_findMaskCenter(target);
+        var _travel_tiles = point_distance(x, y, _pointCenter[0], _pointCenter[1]) / 26;
+        speed = min(20, 8 + _travel_tiles * 0.4);
         direction = point_direction(x, y, _pointCenter[0], _pointCenter[1]);
     }
 }

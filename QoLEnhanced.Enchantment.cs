@@ -26,7 +26,7 @@ namespace QoLEnhanced
 
             // [附魔生成] 优化附魔词缀生成逻辑，增加更多前缀种类，并使其与物品属性更紧密地挂钩
             // 目的: 提升附魔系统的丰富性和不可预测性
-            MslExtensions.QuickMatchBelowFiles("gml_Object_o_skill_enchantment_Other_11", "if (image_alpha", 2, ModFiles, "gml_Object_o_skill_enchantment_Other_11_instead.gml");
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_skill_enchantment_Other_11.gml"), "gml_Object_o_skill_enchantment_Other_11");
 
             // [附魔核心] 注入附魔核心逻辑脚本
             // 作用: 构建完整的附魔体系，支持更丰富的镶嵌组合

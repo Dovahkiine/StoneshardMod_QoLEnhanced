@@ -14,6 +14,10 @@ namespace QoLEnhanced
 
     public partial class QoLEnhanced : Mod
     {
+        private readonly Stopwatch _patchTimer = new();
+        private long _lastTimingMs;
+        private readonly string _timingLogPath = Path.Combine("logs", "qol_patch_timing.log");
+
         // ========================================================================
         // 模组元数据 (Mod Metadata)
         // ========================================================================
@@ -27,6 +31,35 @@ namespace QoLEnhanced
         public override string Version => "1.0.0.0";
 
         public override string TargetVersion => "0.9.4.14";
+
+        private void ResetPatchTiming()
+        {
+            _lastTimingMs = 0;
+            _patchTimer.Restart();
+        }
+
+        private void LogPatchTiming(string label)
+        {
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(_timingLogPath) ?? ".");
+                long elapsedMs = _patchTimer.ElapsedMilliseconds;
+                long deltaMs = elapsedMs - _lastTimingMs;
+                _lastTimingMs = elapsedMs;
+                File.AppendAllText(_timingLogPath,
+                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {label}: +{deltaMs} ms, total {elapsedMs} ms{Environment.NewLine}");
+            }
+            catch
+            {
+                // 计时日志不能影响实际补丁流程。
+            }
+        }
+
+        private void RunTimed(string label, Action action)
+        {
+            action();
+            LogPatchTiming(label);
+        }
 
         // ========================================================================
         // 模组补丁入口 (Mod Patch Entry)
@@ -47,6 +80,9 @@ namespace QoLEnhanced
                 type?.GetMethod("Show", new[] { typeof(string) })?.Invoke(null, new[] { msg });
 
             };
+
+            ResetPatchTiming();
+            LogPatchTiming("PatchMod start");
 
             /* try
             {
@@ -191,6 +227,7 @@ namespace QoLEnhanced
 
             // --- table_attributes: 五维属性（STR、AGL、PRC、Vitality、WIL） 描述覆写 ---
             {
+                List<string> attributesTable = ModLoader.GetTable("gml_GlobalScript_table_attributes");
                 var attributesFiles = new[] {
                     "gml_GlobalScript_table_attributes_rebalance_strength.asm",
                     "gml_GlobalScript_table_attributes_rebalance_agility.asm",
@@ -198,7 +235,6 @@ namespace QoLEnhanced
                     "gml_GlobalScript_table_attributes_rebalance_vitality.asm",
                     "gml_GlobalScript_table_attributes_rebalance_willpower.asm",
                 };
-                List<string> attributesTable = ModLoader.GetTable("gml_GlobalScript_table_attributes");
 
                 foreach (var asm in attributesFiles)
                 {
@@ -213,8 +249,64 @@ namespace QoLEnhanced
                         }
                     }
                 }
+
+                void InsertAttributeRowsAfter(string sectionKey, string afterKey, string codeFile)
+                {
+                    // 先限定 table_attributes 的子表段，再按属性 key 定位，避免同名 key 在不同子表中互相干扰。
+                    int sectionStart = attributesTable.FindIndex(r => r.StartsWith($";{sectionKey};"));
+                    if (sectionStart < 0) return;
+
+                    int sectionEnd = attributesTable.FindIndex(sectionStart + 1, r =>
+                        r.StartsWith(";attribute_") && !r.StartsWith($";{sectionKey};"));
+                    if (sectionEnd < 0)
+                        sectionEnd = attributesTable.Count;
+
+                    int insertIndex = attributesTable.FindIndex(sectionStart + 1, sectionEnd - sectionStart - 1,
+                        r => r.StartsWith($"{afterKey};"));
+                    if (insertIndex < 0) return;
+
+                    foreach (var line in ModFiles.GetCode(codeFile).Split('\n'))
+                    {
+                        var t = line.Trim();
+                        if (string.IsNullOrEmpty(t)) continue;
+                        attributesTable.Insert(++insertIndex, t);
+                    }
+                }
+
+                InsertAttributeRowsAfter("attribute_text", "EVS", "gml_GlobalScript_table_attributes_add_chain_turn.asm");
+                InsertAttributeRowsAfter("attribute_desc", "EVS", "gml_GlobalScript_table_attributes_addinfo_chain_turn.asm");
+
                 ModLoader.SetTable(attributesTable, "gml_GlobalScript_table_attributes");
             }
+
+            // --- table_skills_stats: 技能基础参数覆写 ---
+            {
+                List<string> skillsStatsTable = ModLoader.GetTable("gml_GlobalScript_table_skills_stats");
+                var skillsStatsFiles = new[]
+                {
+                    "gml_GlobalScript_table_skills_stats_riposte.asm",
+                    "gml_GlobalScript_table_skills_stats_war_cry.asm",
+                    "gml_GlobalScript_table_skills_stats_finisher.asm",
+                    "gml_GlobalScript_table_skills_stats_taking_aim.asm",
+                };
+
+                foreach (var asm in skillsStatsFiles)
+                {
+                    var csv = ModFiles.GetCode(asm).Trim();
+                    var prefix = csv.Substring(0, Math.Min(10, csv.Length));
+                    for (int i = 0; i < skillsStatsTable.Count; i++)
+                    {
+                        if (skillsStatsTable[i].StartsWith(prefix))
+                        {
+                            skillsStatsTable[i] = csv;
+                            break;
+                        }
+                    }
+                }
+
+                ModLoader.SetTable(skillsStatsTable, "gml_GlobalScript_table_skills_stats");
+            }
+            LogPatchTiming("Table replacements");
 
             // ========================================================================
             // 区块 0: 资产注册 (Asset Registration)
@@ -224,6 +316,8 @@ namespace QoLEnhanced
 
             #region 0.1 函数注册 (Function Registration)
 
+            // 调用实例内部函数变量，兼容 method 与普通 script。
+            Msl.AddFunction(ModFiles.GetCode("_scr_call_method.gml"), "gml_GlobalScript__scr_call_method");
             // 敌人属性缩放
             Msl.AddFunction(ModFiles.GetCode("_scr_scale_enemy_csv_by_level.gml"), "gml_GlobalScript__scr_scale_enemy_csv_by_level");
             // 武器前缀初始化
@@ -240,10 +334,13 @@ namespace QoLEnhanced
             Msl.AddFunction(ModFiles.GetCode("_scr_do_shoot.gml"), "gml_GlobalScript__scr_do_shoot");
             Msl.AddFunction(ModFiles.GetCode("_scr_extract_crossbow_bolt.gml"), "gml_GlobalScript__scr_extract_crossbow_bolt");
             Msl.AddFunction(ModFiles.GetCode("_scr_fire_bow_once.gml"), "gml_GlobalScript__scr_fire_bow_once");
+            Msl.AddFunction(ModFiles.GetCode("_scr_count_available_bolts.gml"), "gml_GlobalScript__scr_count_available_bolts");
             Msl.AddFunction(ModFiles.GetCode("_scr_get_weapon_hand_types.gml"), "gml_GlobalScript__scr_get_weapon_hand_types");
             Msl.AddFunction(ModFiles.GetCode("_scr_residual_charge_on_spell_hit.gml"), "gml_GlobalScript__scr_residual_charge_on_spell_hit");
+            Msl.AddFunction(ModFiles.GetCode("_scr_dghub_emit_player_damage.gml"), "gml_GlobalScript__scr_dghub_emit_player_damage");
 
             #endregion
+            LogPatchTiming("Function registration");
 
             #region 0.2 对象与事件注册 (Object & Event Registration)
 
@@ -274,6 +371,7 @@ namespace QoLEnhanced
             });
 
             #endregion
+            LogPatchTiming("Object and event registration");
 
             #region 0.3 菜单注册 (Menu Registration)
 
@@ -298,6 +396,7 @@ namespace QoLEnhanced
             });
 
             #endregion
+            LogPatchTiming("Menu registration");
 
             #region 0.4 精灵注册 (Sprite Registration)
 
@@ -311,21 +410,23 @@ namespace QoLEnhanced
             Msl.GetSprite("s_stash_trade_540_rusty10x7");
 
             #endregion
+            LogPatchTiming("Sprite registration");
 
             // ========================================================================
             // 功能区块调度 (Feature Block Dispatch)
             // ========================================================================
 
-            PatchBlock_01_GlobalConfig();
-            PatchBlock_02_Enchantment();
-            PatchBlock_03_TimeAndHotkeys();
-            PatchBlock_04_CharacterMechanics();
-            PatchBlock_05_SkillsAndCombat();
-            PatchBlock_07_Consumables();
-            PatchBlock_08_Economy();
-            PatchBlock_09_InventoryUI();
-            PatchBlock_10_Stacking();
-            PatchBlock_11_AttributeCaps();
+            RunTimed("Block 01 GlobalConfig", PatchBlock_01_GlobalConfig);
+            RunTimed("Block 02 Enchantment", PatchBlock_02_Enchantment);
+            RunTimed("Block 03 TimeAndHotkeys", PatchBlock_03_TimeAndHotkeys);
+            RunTimed("Block 04 CharacterMechanics", PatchBlock_04_CharacterMechanics);
+            RunTimed("Block 05 SkillsAndCombat", PatchBlock_05_SkillsAndCombat);
+            RunTimed("Block 07 Consumables", PatchBlock_07_Consumables);
+            RunTimed("Block 08 Economy", PatchBlock_08_Economy);
+            RunTimed("Block 09 InventoryUI", PatchBlock_09_InventoryUI);
+            RunTimed("Block 10 Stacking", PatchBlock_10_Stacking);
+            RunTimed("Block 11 AttributeCaps", PatchBlock_11_AttributeCaps);
+            LogPatchTiming("PatchMod complete");
         }
 
         private static void ExportTable(string table)

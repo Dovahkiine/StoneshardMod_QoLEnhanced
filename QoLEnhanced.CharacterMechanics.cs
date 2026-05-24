@@ -25,7 +25,7 @@ namespace QoLEnhanced
 
             // [野性狩猎强化] 所有人都默认具有野性狩猎的负面阈值提升效果，增加阈值成长性
             // 修改对象: 多个状态检查脚本（疼痛、中毒、饥饿、口渴、疲劳）
-            string[] wildHuntChecks =
+            /* string[] wildHuntChecks =
             {
                 "gml_GlobalScript_scr_paincheck",
                 "gml_GlobalScript_scr_intoxication_check",
@@ -36,15 +36,19 @@ namespace QoLEnhanced
             foreach (var gmlName in wildHuntChecks)
             {
                 MslExtensions.QuickMatch(gmlName, "var _wildhunt_modifier", "var _wildhunt_modifier = floor(scr_atr(\"LVL\") * 0.6);");
-                MslExtensions.QuickMatchBelow(gmlName, "var _wildhunt_modifier", 2, "");
-            }
 
-            // [野性狩猎移除限制] 移除对野性狩猎实例存在性的硬性判定
-            // 效果: 被动生效不再依赖特定 perk 对象
-            MslExtensions.QuickMatch("gml_Object_o_pass_skill_resourcefulness_Alarm_4", "if instance_exists(o_perk_wild_hunt)", "");
+                MslExtensions.QuickMatchBelow(gmlName, "var _wildhunt_modifier", 2, "");
+            } */
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_scr_fatigue_check.gml"), "gml_GlobalScript_scr_fatigue_check");
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_scr_hungercheck.gml"), "gml_GlobalScript_scr_hungercheck");
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_scr_intoxication_check.gml"), "gml_GlobalScript_scr_intoxication_check");
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_scr_paincheck.gml"), "gml_GlobalScript_scr_paincheck");
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_scr_thirsty_check.gml"), "gml_GlobalScript_scr_thirsty_check");
+
+            LogPatchTiming("Block 04.1 Wild Hunt");
 
             // [全角色开局饰品] 为所有初始角色增加"希尔达的饰品 (Hilda's Trinket)"
-            string[] starterChars = {
+            /* string[] starterChars = {
                 "gml_Object_o_knight_maiden_Create_0", "gml_Object_o_runaway_wizzard_Create_0",
                 "gml_Object_o_reaver_Create_0", "gml_Object_o_revenger_Create_0",
                 "gml_Object_o_woodward_Create_0", "gml_Object_o_agemon_Create_0",
@@ -58,7 +62,21 @@ namespace QoLEnhanced
             foreach (var character in starterChars)
             {
                 MslExtensions.QuickInsertBelow(character, "scr_inventory_add_item(o_inv_map_osbrook)", hildaTrinketGML);
+            } */
+            Msl.LoadGML("gml_Object_o_player_Create_0").MatchAll().InsertBelow(@"
+            with (o_inventory)
+            {
+                var _list = scr_atr(""recipesConsumsOpened"");
+                if (!global.is_load_game && scr_atr(""nameKey"") != ""Hilda"" && !ds_list_find_index(_list, ""hilda_trinket""))
+                {
+                    scr_inventory_add_item(o_inv_hilda_trinket);
+                    ds_list_add(_list, ""hilda_trinket"");
+                }
             }
+            auto_move = true;
+            tile_transition = false;
+            ").Save();
+            LogPatchTiming("Block 04.1 Hilda starter trinket");
 
             // [希尔达饰品] 修改骨器猎获的初始数值和最高数值
             // 目的: 增强希尔达被动机制的实用性和成长空间 带有硬编码标记，后续版本可能需要调整
@@ -69,6 +87,7 @@ namespace QoLEnhanced
             .MatchBelow("pushloc.v local.j", 1).ReplaceBy("pushi.e 17")
             .MatchBelow(":[114]", 1).ReplaceBy("pushi.e 15").Save(); // 修改骨器猎获类别上限
             MslExtensions.QuickMatch("gml_GlobalScript_scr_hoversGetEnchantedAttributes", "while (_i < 10)", "while (_i < 17)");
+            LogPatchTiming("Block 04.1 Hilda enchant values");
 
             #endregion
 
@@ -79,6 +98,7 @@ namespace QoLEnhanced
             // [开局 DLC 物品] 启用开局获得 DLC 物品
             // 目的: 所有玩家都能体验完整的装备选择
             MslExtensions.QuickMatch("gml_Object_o_player_chest_Alarm_1", "if (scr_user_owns", "");
+            LogPatchTiming("Block 04.2 Starter equipment");
 
             #endregion
 
@@ -92,6 +112,7 @@ namespace QoLEnhanced
             // 修改天赋描述文本，反映新的效果和机制
             // [已迁移到运行时覆写]             Msl.LoadAssemblyAsString("skills").MatchFrom("push.s \"vow_feat;Каждый")
             // .ReplaceBy(ModFiles.GetCode("skills_rebalance_vow_feat.asm")).Save();
+            LogPatchTiming("Block 04.3 Ana talent");
 
             #endregion
 
@@ -111,6 +132,7 @@ namespace QoLEnhanced
             // 修改天赋描述文本，反映新的效果和机制
             // [已迁移到运行时覆写]             Msl.LoadAssemblyAsString("skills").MatchFrom("push.s \"magical_erudition;Даёт")
             // .ReplaceBy(ModFiles.GetCode("skills_rebalance_magical_erudition.asm")).Save();
+            LogPatchTiming("Block 04.4 Jonna talent");
 
             #endregion
         }

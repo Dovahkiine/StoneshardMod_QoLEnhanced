@@ -1,5 +1,18 @@
 depth = -y + 18;
 
+var _riposte_active = false;
+with (o_skill)
+{
+    if (is_activate && skill == "Riposte")
+        _riposte_active = true;
+}
+
+if (!global.skill_activate || !_riposte_active)
+{
+    instance_destroy();
+    exit;
+}
+
 if (instance_exists(o_floor_target))
 {
     x = o_floor_target.x;
@@ -13,4 +26,4 @@ if (instance_exists(o_floor_target))
 else
     instance_destroy();
 
-image_alpha = place_meeting(x, y, o_aoe_range);
+image_alpha = 1;
