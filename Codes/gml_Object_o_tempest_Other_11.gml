@@ -141,7 +141,7 @@ if (!is_created)
 
         with (o_unit)
         {
-            if (id != other.owner.id && id != other.target && scr_tile_distance(id, other.target) <= 12)
+            if (instance_exists(o_player) &&(visible || scr_tile_distance(o_player, other.target) <= 25) && id != other.owner.id && id != other.target)
             {
                 _target = id;
                 break;

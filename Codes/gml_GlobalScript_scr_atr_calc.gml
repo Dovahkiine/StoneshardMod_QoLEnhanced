@@ -7,28 +7,28 @@ function scr_atr_calc(argument0, argument1)
         argument1 = false;
 
     var enemy_targ = o_enemy;
-    
+
     if (!instance_exists(argument0))
         return 0;
-    
+
     if (argument0 != o_player && argument0 != o_unit)
         enemy_targ = argument0;
-    
+
     var isPlayer = is_player(argument0);
-    
+
     if (isPlayer && !instance_exists(o_player))
         return 0;
-    
+
     if (argument0 != o_player && !isPlayer)
     {
         if (room == r_test)
             return 0;
-        
+
         with (enemy_targ)
         {
             if (HP < 1)
                 return 0;
-            
+
             if (!is_simple)
             {
                 scr_enemy_buff_buffer();
@@ -44,24 +44,28 @@ function scr_atr_calc(argument0, argument1)
                 WIL = clamp(bWIL + _will, 2, 200);
                 Avoiding_Trap = bAvoiding_Trap;
                 Bonus_Range = scr_buff_param("Bonus_Range");
-                
+
                 if (is_mage)
                     Bonus_Range += bBonus_Range;
-                
+
                 Charge_Distance = scr_buff_param("Charge_Distance");
                 Arcanistic_Distance = scr_buff_param("Arcanistic_Distance");
-                
+
                 if (!is_mage && !is_shoot)
                     Bonus_Range = 0;
-                
-                range = (brange + scr_buff_param("range")) * ((100 + Bonus_Range) / 100);
+
+                range = max(1, (brange + scr_buff_param("range")) * ((100 + Bonus_Range) / 100));
+
+                // 0.9.4.22.1 原版兼容：法师单位射程仍按新版原版固定为 1。
+                if (is_mage)
+                    range = min(1, range);
                 MP_turn = scr_buff_param("MP_turn");
                 HP_turn = scr_buff_param("HP_turn");
-                
+
                 if (!argument1)
                 {
                     var relation = HP / max_hp;
-                    
+
                     if (attributes_owner_depender && instance_exists(owner))
                     {
                         var _owner_hp = (object_index == o_astral_phantasm) ? (owner.Magic_Power / 100) : (owner.Magic_Power / 100);
@@ -71,38 +75,38 @@ function scr_atr_calc(argument0, argument1)
                     {
                         max_hp = math_round(bHP + scr_buff_param("max_hp") + Vitality * 3) * 2;
                     }
-                    
+
                     max_hp = math_round(max(1, max_hp));
                     HP = math_round(max_hp * relation);
                     Health_Threshold = clamp(100 - scr_Health_Threshold_calc(isPlayer), 0, 100);
                     var _hpChange = (max_hp * Health_Threshold) / 100;
-                    
+
                     if (HP > _hpChange)
                         HP = math_round(_hpChange);
-                    
+
                     if (HP < 1)
                         HP = 1;
-                    
+
                     Max_Energy_Threshold = clamp(100 + scr_buff_param("Max_Energy_Threshold"), 0, 100);
-                    
+
                     if (max_mp != 0 && bMP != 0)
                     {
                         var _relat = MP / max_mp;
-                        
+
                         if (!is_real(_relat))
                             _relat = 1;
-                        
+
                         max_mp = max(1, math_round(bMP + scr_buff_param("max_mp")));
                         MP = math_round(max_mp * _relat);
                         var _mpChange = (max_mp * Max_Energy_Threshold) / 100;
-                        
+
                         if (MP > _mpChange)
                             MP = _mpChange;
-                        
+
                         MP = math_round(MP);
                     }
                 }
-                
+
                 MP_Restoration = bMP_Restoration + scr_buff_param("MP_Restoration");
                 PRR = clamp(bPRR + scr_buff_param("PRR") + STR * 1.5, 0, 100);
                 scr_def_calc(isPlayer);
@@ -130,7 +134,7 @@ function scr_atr_calc(argument0, argument1)
                 Hit_Chance = clamp(bHit_Chance + scr_buff_param("Hit_Chance") + AGL * 1.5, 5, 300); // QoL: AGL 传导命中，上限 150→300
                 Spell_Hit_Chance = clamp(bSpell_Hit_Chance + scr_buff_param("Spell_Hit_Chance") + PRC * 1.5, 5, 300); // QoL: PRC 传导法术命中
                 Magic_Power = clamp(bMagic_Power + scr_buff_param("Magic_Power") + WIL * 2, 25, 500); // QoL: WIL 传导法力伤害，上限 300→500
-                
+
                 if (!argument1)
                 {
                     Healing_Received = bHealing_Received + scr_buff_param("Healing_Received");
@@ -152,17 +156,17 @@ function scr_atr_calc(argument0, argument1)
                     Damage_Returned = clamp(bDamage_Returned + scr_buff_param("Damage_Returned"), 0, 100);
                     Pyromantic_Power = scr_buff_param("Pyromantic_Power") + bPyromantic_Power;
                     Geomantic_Power = scr_buff_param("Geomantic_Power") + bGeomantic_Power;
-                    Venomantic_Power = scr_buff_param("Venomantic_Power") + bVenomantic_Power;  
+                    Venomantic_Power = scr_buff_param("Venomantic_Power") + bVenomantic_Power;
                     Cryomantic_Power = scr_buff_param("Cryomantic_Power") + bCryomantic_Power;
                     Electromantic_Power = scr_buff_param("Electromantic_Power") + bElectromantic_Power;
                     Arcanistic_Power = scr_buff_param("Arcanistic_Power") + bArcanistic_Power;
                     Astromantic_Power = scr_buff_param("Astromantic_Power") + bAstromantic_Power;
                     Psimantic_Power = scr_buff_param("Psimantic_Power") + bPsimantic_Power;
                     var _cooldown_reduction_mod = 0;
-                    
+
                     if (!scr_passive_skill_is_open(o_enemy_pass_steadfastness))
                         _cooldown_reduction_mod = scr_buff_param("Cooldown_Reduction");
-                    
+
                     Cooldown_Reduction = clamp(bCooldown_Reduction + _cooldown_reduction_mod - WIL, 10, 200);       // QoL: WIL 减少冷却时间，最低 10%
                     Spells_Energy_Cost = clamp(bSpells_Energy_Cost + scr_buff_param("Spells_Energy_Cost"), -75, 200);
                     Skills_Energy_Cost = clamp(bSkills_Energy_Cost + scr_buff_param("Skills_Energy_Cost"), -75, 200);
@@ -179,7 +183,7 @@ function scr_atr_calc(argument0, argument1)
                     Frost_Resistance = clamp(Frost_Resistance_RAW + Nature_Resistance, -200, _resistance_max);
                     Shock_Resistance = clamp(Shock_Resistance_RAW + Nature_Resistance, -200, _resistance_max);
                     Caustic_Resistance = clamp(Caustic_Resistance_RAW + Nature_Resistance, -200, _resistance_max);
-                    
+
                     if (Poison_Immunity)
                     {
                         Poison_Resistance = _resistance_max;
@@ -190,7 +194,7 @@ function scr_atr_calc(argument0, argument1)
                         Poison_Resistance = clamp(bPoison_Resistance + scr_buff_param("Poison_Resistance"), -200, _resistance_max);
                         Poison_Resistance_RAW = Poison_Resistance;
                     }
-                    
+
                     Slashing_Resistance_RAW = clamp(bSlashing_Resistance + scr_buff_param("Slashing_Resistance"), -200, _resistance_max);
                     Piercing_Resistance_RAW = clamp(bPiercing_Resistance + scr_buff_param("Piercing_Resistance"), -200, _resistance_max);
                     Blunt_Resistance_RAW = clamp(bBlunt_Resistance + scr_buff_param("Blunt_Resistance"), -200, _resistance_max);
@@ -210,23 +214,23 @@ function scr_atr_calc(argument0, argument1)
                     Knockback_Resistance = _resistance_max;
                     Bleeding_Resistance = _resistance_max;
                     Stun_Resistance = _resistance_max;
-                    
+
                     if (!Knockback_Immunity)
                         Knockback_Resistance = clamp(bKnockback_Resistance + scr_buff_param("Knockback_Resistance"), -100, _resistance_max);
-                    
+
                     if (!Stun_Immunity)
                         Stun_Resistance = clamp(bStun_Resistance + scr_buff_param("Stun_Resistance"), -100, _resistance_max);
-                    
+
                     if (!Bleeding_Immunity)
                         Bleeding_Resistance = clamp(bBleeding_Resistance + scr_buff_param("Bleeding_Resistance"), -100, _resistance_max);
-                    
+
                     if (object_is_ancestor(object_index, o_Hive))
                     {
                         Knockback_Resistance = _resistance_max;
                         Knockback_Immunity = true;
                     }
                 }
-                
+
                 Armor_Damage = clamp(bArmor_Damage + scr_buff_param("Armor_Damage") + STR * 1.5, 0, 500);               // QoL: STR 传导破甲
                 Bodypart_Damage = clamp(bBodypart_Damage + scr_buff_param("Bodypart_Damage") + STR * 0.8, 0, 400);     // QoL: STR 传导肢体伤害
                 Bleeding_Chance = clamp(bBleeding_Chance + scr_buff_param("Bleeding_Chance") + AGL * 0.4, 0, 200);     // QoL: AGL 传导出血
@@ -245,37 +249,37 @@ function scr_atr_calc(argument0, argument1)
                 HP = math_round(max_hp * relation);
                 Health_Threshold = clamp(100 - scr_Health_Threshold_calc(isPlayer), 0, 100);
                 var _hpChange = (max_hp * Health_Threshold) / 100;
-                
+
                 if (HP > _hpChange)
                     HP = math_round(_hpChange);
-                
+
                 if (max_mp != 0 && bMP != 0)
                 {
                     var _relat = MP / max_mp;
-                    
+
                     if (!is_real(_relat))
                         _relat = 1;
-                    
+
                     max_mp = max(1, math_round(bMP + scr_buff_param("max_hp")));
                     MP = math_round(max_mp * _relat);
                     var _mpChange = (max_mp * Max_Energy_Threshold) / 100;
-                    
+
                     if (MP > _mpChange)
                         MP = _mpChange;
-                    
+
                     MP = math_round(MP);
                 }
             }
         }
     }
-    
+
     if (argument0 == o_unit || argument0 == o_player || isPlayer)
     {
         with (o_player)
         {
             if (HP < 1)
                 return false;
-            
+
             scr_player_buff_buffer();
             LVL = scr_atr("LVL");
             STR = clamp(scr_FullAtr("STR"), 5, 160);
@@ -293,55 +297,59 @@ function scr_atr_calc(argument0, argument1)
                 PRR = clamp(-15 + (STR * 1.5) + scr_inv_buff_atr("PRR"), 0, 100);
                 var _type = "shield";
                 var kWeapon = 0;
-                
+
                 if (instance_exists(o_inv_right_hand.children) && o_inv_right_hand.children.equipped)
                     _type = o_inv_right_hand.children.type;
-                
+
                 if (instance_exists(o_inv_left_hand.children) && _type == "shield")
                 {
                     if (o_inv_left_hand.children.equipped)
                         _type = o_inv_left_hand.children.type;
                 }
-                
+
                 switch (_type)
                 {
+                    case "shield":
+                        kWeapon = 2;
+                        break;
+
                     case "mace":
                         kWeapon = 0.75;
                         break;
-                    
+
                     case "axe":
                         kWeapon = 0.75;
                         break;
-                    
+
                     case "sword":
                         kWeapon = 1.1;
                         break;
-                    
+
                     case "dagger":
                         kWeapon = 0.5;
                         break;
-                    
+
                     case "2hsword":
                         kWeapon = 1.25;
                         break;
-                    
+
                     case "2hStaff":
                         kWeapon = 0.9;
                         break;
-                    
+
                     case "spear":
                         kWeapon = 1;
                         break;
-                    
+
                     case "2haxe":
                         kWeapon = 0.85;
                         break;
-                    
+
                     case "2hmace":
                         kWeapon = 0.9;
                         break;
                 }
-                
+
                 Block_PowerMax = (((STR * kWeapon) + scr_inv_buff_atr("Block_Power")) * (100 + scr_inv_buff_atr("BlockPowerBonus"))) / 100;
                 Block_PowerMax = max(Block_PowerMax, 0);
                 Block_Power = math_round(Block_PowerMax * Block_RecoveryStatus);
@@ -354,7 +362,7 @@ function scr_atr_calc(argument0, argument1)
                 Block_PowerMax = 0;
                 Block_Recovery = 0;
             }
-            
+
             EVS = clamp(1 + scr_atr("bEVS") + scr_inv_buff_atr("EVS") + (_bonusAGL * 5), -25, 300);
             CTA = clamp(-14 + (1.5 * AGL) + scr_inv_buff_atr("CTA"), 0, 300);
             STL = clamp(scr_inv_buff_atr("STL"), -100, 100);
@@ -378,10 +386,10 @@ function scr_atr_calc(argument0, argument1)
             Health_Threshold = clamp(100 - scr_Health_Threshold_calc(isPlayer), 0, 100);
             HP = max_hp * relation;
             var _hpChange = (max_hp * Health_Threshold) / 100;
-            
+
             if (HP > _hpChange)
                 HP = _hpChange;
-            
+
             HP = max(1, math_round(HP));
             Healing_Received = clamp(100 + scr_inv_buff_atr("Healing_Received"), 0, 1000);
             Toxicity_Resistance = clamp(scr_inv_buff_atr("Toxicity_Resistance"), -100, 200);
@@ -393,16 +401,16 @@ function scr_atr_calc(argument0, argument1)
             Max_Energy_Threshold = clamp((100 + scr_inv_buff_atr("Max_Energy_Threshold")) - (0.5 * scr_atr("Fatigue")), 0, 100);
             MP = max_mp * _relat;
             var _mpChange = (max_mp * Max_Energy_Threshold) / 100;
-            
+
             if (MP > _mpChange)
                 MP = _mpChange;
-            
+
             MP = math_round(MP);
             MP_Restoration = clamp(scr_inv_buff_atr("MP_Restoration") + (Vitality * 2), 0, 1000);
             scr_characterStatsUpdateMin("healthLowest", (HP / max_hp) * 100);
             Fortitude = clamp(scr_inv_buff_atr("Fortitude") + (_bonusWIL * 7.5), -100, 200);
             var _weight = 0;
-            
+
             with (o_inv_weapon_slot)
             {
                 with (children)
@@ -415,7 +423,7 @@ function scr_atr_calc(argument0, argument1)
                         _weight += 1;
                 }
             }
-            
+
             var _costWill = 115 + (WIL * -1.5);
             Spells_Energy_Cost = clamp(scr_inv_buff_atr("Spells_Energy_Cost"), -99, 200);
             Skills_Energy_Cost = clamp(scr_inv_buff_atr("Skills_Energy_Cost"), -99, 200);
@@ -438,7 +446,7 @@ function scr_atr_calc(argument0, argument1)
                 if (instance_exists(_lh_child) && _lh_child.equipped)
                     _offHandItem = _lh_child;
             }
-                
+
             if (instance_exists(_mainHandItem) && instance_exists(_offHandItem))
             {
                 var _m_r = variable_instance_exists(_mainHandItem, "haveAmmunitionSlot") && _mainHandItem.haveAmmunitionSlot;
@@ -451,14 +459,14 @@ function scr_atr_calc(argument0, argument1)
             scr_def_calc(isPlayer);
 
             range = _both_ranged ? math_round(max(1, ceil(scr_inv_param("Range") / 2)) * (100 + Bonus_Range) / (100 - _bonusPRC)) : math_round(max(1, ceil(scr_inv_param("Range"))) * (100 + Bonus_Range) / (100 - _bonusPRC));
-            
+
             if (!scr_is_weapon_type_shooting())
                 range = 1;
-            
+
             with (o_skill_attack_mode_shot)
             {
                 event_user(7);
-                
+
                 if (is_activate)
                 {
                     with (o_aoe_range)
@@ -468,7 +476,7 @@ function scr_atr_calc(argument0, argument1)
                     }
                 }
             }
-            
+
             melee_range = 2;
             Damage_Returned = clamp(scr_inv_buff_atr("Damage_Returned"), 0, 200);
             Hunger_Resistance = clamp(bHunger_Resistance + scr_inv_buff_atr("Hunger_Resistance"), -100, 200);
@@ -491,24 +499,24 @@ function scr_atr_calc(argument0, argument1)
             Temporary_Morale = scr_inv_buff_atr("MoraleTemporary");
             var _fatigue_gain = 0;
             var _received_xp = 0;
-            
+
             if (scr_caravanUpgradeIsOpen("Incense"))
             {
                 if (scr_atr("Morale") > 50)
                     _fatigue_gain += 8;
-                
+
                 if (scr_atr("Sanity") > 50)
                     _received_xp += 8;
             }
-            
+
             if (scr_caravanUpgradeIsOpen("Dummy"))
                 _received_xp += 8;
-            
+
             var _bFatigueGain = scr_atr("Fatigue_Gain");
-            
+
             if (__is_undefined(_bFatigueGain))
                 _bFatigueGain = 0;
-            
+
             Fatigue_Gain = clamp(_bFatigueGain + scr_inv_buff_atr("Fatigue_Gain") + _fatigue_gain, -100, 200);
             Crit_Avoid = clamp(bCrit_Avoid + scr_inv_buff_atr("Crit_Avoid"), -20, 200);
             Received_XP = clamp(scr_FullAtr("Received_XP") + _received_xp, 25, 500);
@@ -573,7 +581,7 @@ function scr_atr_calc(argument0, argument1)
             Daze_Chance_Multiplier = max(1, scr_inv_param("Daze_Chance_Multiplier"));
             Stun_Chance_Multiplier = max(1, scr_inv_param("Stun_Chance_Multiplier"));
             Stagger_Chance_Multiplier = max(1, scr_inv_param("Stun_Chance_Multiplier"));
-            
+
             with (o_inv_weapon_slot)
             {
                 if (instance_exists(children))
@@ -584,16 +592,17 @@ function scr_atr_calc(argument0, argument1)
                         other.isSlingman = true;
                 }
             }
-            
+
             Pain_K = 1;
             Sword_Duration_Resistance = 1 - scr_buff_param("Sword_Duration_Resistance");
             Duration_Resistance = 1 - scr_buff_param("Duration_Resistance");
             var _avoid = 1;
-            
+
             if (instance_exists(o_pass_skill_lightning_reflexes) && o_pass_skill_lightning_reflexes.is_open)
                 _avoid = 2;
-            
-            Avoiding_Trap = (25 + EVS + scr_buff_param("Avoiding_Trap")) * _avoid;
+
+            // 0.9.4.22.1 原版兼容：陷阱规避基础值从 25 下调为 5。
+            Avoiding_Trap = (5 + EVS + scr_buff_param("Avoiding_Trap")) * _avoid;
             Trade_Favorability = scr_buff_param("Trade_Favorability");
             scr_gold_count();
         }

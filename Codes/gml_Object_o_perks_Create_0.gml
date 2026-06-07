@@ -1,4 +1,4 @@
-if (object_index == o_perk_might_and_magic || object_index == o_perk_lifelong_journey || object_index == o_perk_suum_cuique || object_index == o_perk_magical_erudition || object_index == o_perk_trained_eye || object_index == o_perk_vow_feat || object_index == o_perk_berserk)
+if (object_index != o_perk_wild_hunt)
 {
     hunting_animals_array = [[o_gulon, "GulonKills"], [o_small_troll, "YoungTrollKills"], [o_bear, "BearKills"], [o_harpy, "HarpyKills"], [o_crawler, "CrawlerKills"], [o_crawler_broodmother, "CrawlerKills"], [o_bison, "BisonKills"], [o_saiga_m, "DeerSaigaKills"], [o_deer_m, "DeerSaigaKills"], [o_wolf, "WolfKills"], [o_moose, "MooseKills"], [o_snake, "SnakeKills"], [o_boar, "BoarKills"], [c_ghoul, "GhoulKills"], [o_Rockeater_parent, "RockeaterKills"]]; 
     array_foreach(hunting_animals_array, function(argument0)

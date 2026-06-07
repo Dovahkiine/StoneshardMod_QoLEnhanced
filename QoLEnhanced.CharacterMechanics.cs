@@ -86,7 +86,7 @@ namespace QoLEnhanced
             .MatchBelow(":[93]", 2).ReplaceBy("pushloc.v local.i\r\npushi.e 17")
             .MatchBelow("pushloc.v local.j", 1).ReplaceBy("pushi.e 17")
             .MatchBelow(":[114]", 1).ReplaceBy("pushi.e 15").Save(); // 修改骨器猎获类别上限
-            MslExtensions.QuickMatch("gml_GlobalScript_scr_hoversGetEnchantedAttributes", "while (_i < 10)", "while (_i < 17)");
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_scr_hoversGetEnchantedAttributes.gml"), "gml_GlobalScript_scr_hoversGetEnchantedAttributes");
             LogPatchTiming("Block 04.1 Hilda enchant values");
 
             #endregion

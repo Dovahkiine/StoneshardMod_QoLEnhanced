@@ -237,6 +237,43 @@ with (o_inv_bone_cradle)
 
 `Msl.AddFunction()` 注册的新函数必须在所有引用它的代码（`SetStringGMLInFile`、`InsertBelow` 等）**之前**执行。否则 MSL 编译器无法解析函数调用，导致运行时崩溃。
 
+#### 规则 7a: AddFunction 的注册顺序必须按依赖拓扑排列（高优先级）
+
+如果新增函数之间存在调用关系，顺序必须是：
+
+1. 先注册底层 helper（被调用者）
+2. 再注册上层 helper（调用者）
+3. 最后再注入/替换会调用它们的原版脚本
+
+> 记忆法：**先被调用者，后调用者，最后改原版脚本。**
+
+#### 规则 7b: 为了规避 MSL 解析器脆弱性，helper 默认坚持“一文件一函数”（高优先级）
+
+虽然 GameMaker 语法允许一个文件里写多个函数，但在本项目的 MSL `AddFunction` 工作流里，**默认必须坚持一个 `.gml` 文件只放一个函数**。不要把多个 helper 塞进同一个 `_scr_*.gml` 文件后再一起注册。
+
+> 这样做的目的不是语法正确性，而是降低 MSL 解析、注册名映射、依赖排查时的歧义。
+
+#### 规则 7c: `QuickMatchBelow(...)` 是“替换某行”，不是“在后面追加”（高优先级）
+
+`QuickMatchBelow(gmlName, original, linesAfter, replacement)` 的效果是：
+
+- 先找到 `original`
+- 再向下偏移 `linesAfter`
+- **把那一整行替换成 `replacement`**
+
+它不是插入操作。
+
+因此：
+
+- 要“追加逻辑”，用 `QuickInsertBelow(...)`
+- 要“替掉原版某行”，才用 `QuickMatchBelow(...)`
+
+典型事故：
+
+- 在 `gml_Object_c_container_Other_13` 里误用 `QuickMatchBelow(...)`
+- 会把原版 `script_execute(other.loot_script, ...)` 替掉
+- 最终表现为：任务箱/普通箱打开后直接变空箱
+
 #### 规则 8: `scr_skill_call_passive` 签名速查
 
 ```gml

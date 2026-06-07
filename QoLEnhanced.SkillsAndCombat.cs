@@ -105,7 +105,7 @@ namespace QoLEnhanced
                 scr_temp_incr_atr(""Shock_Resistance"", -0.5 * _count, 12, target, target);
             }");
             Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_pass_skill_residual_charge_Other_17.gml"), "gml_Object_o_pass_skill_residual_charge_Other_17");
-            MslExtensions.QuickMatch("gml_Object_o_lighting_Create_0", "scr_temp_incr_atr", "scr_temp_incr_atr(\"Electromantic_Power\", 25, 2400, owner, owner);");
+            MslExtensions.QuickMatch("gml_Object_o_lighting_Create_0", "scr_temp_effect_update(object_index, owner, \"Electromantic_Power\", 10, 1200, 1)", "scr_temp_effect_update(object_index, owner, \"Electromantic_Power\", 25, 2400, 1);");
             LogPatchTiming("Block 05.2 Residual charge");
 
 
@@ -118,12 +118,12 @@ namespace QoLEnhanced
 
             // [残余电荷] 法术命中触发减抗 — 球状闪电/静电场
             Msl.LoadGML("gml_Object_o_ball_lightning_Other_10")
-                .MatchFrom("scr_skill_call_passive(o_pass_skill_conduit, owner, _target")
+                .MatchFrom("Shock_Damage = _shock_damage")
                 .InsertBelow("_scr_residual_charge_on_spell_hit(owner, _target);")
                 .Save();
 
             Msl.LoadGML("gml_Object_o_static_field_impact_Other_11")
-                .MatchFrom("scr_skill_call_passive(o_pass_skill_recharge, owner, target")
+                .MatchFrom("event_inherited()")
                 .InsertBelow("_scr_residual_charge_on_spell_hit(owner, target);")
                 .Save();
             LogPatchTiming("Block 05.2 residual charge extra hooks");
@@ -139,24 +139,7 @@ namespace QoLEnhanced
             // 改变: 范围 12->15, 精力消耗降低, CD减少, 控制效果稳定触发
             // table_skills_stats 已在 PatchMod 主函数的表格替换区统一处理
             MslExtensions.QuickMatch("gml_Object_o_war_cry_birth_Other_10", "var _range", "var _range = 15;");
-            MslExtensions.QuickMatchFromUntil("gml_Object_o_war_cry_impact_Other_11", "if scr_chance_value", "}", @"
-            var _buff = -4;
-
-            _buff = scr_effect_create(o_db_confuse, 12, target, target);
-            if scr_chance_value(40 + 2 * owner.WIL)
-                _buff = scr_effect_create(o_db_daze, 3, target, target);
-
-            if _buff
-            {
-                with (owner)
-                {
-                    var _rage = scr_instance_exists_in_list(o_b_rage);
-
-                    with (_rage)
-                    {
-                        if (duration <= 60)
-                            duration += 4;
-            ");
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_war_cry_impact_Other_11.gml"), "gml_Object_o_war_cry_impact_Other_11");
             // 修改技能描述文本，反映新的效果和机制
             // [已迁移到运行时覆写]             Msl.LoadAssemblyAsString("skills").MatchFrom("push.s \"War_Cry;Издаёт")
             // .ReplaceBy(ModFiles.GetCode("skills_rebalance_war_cry.asm")).Save();
@@ -204,7 +187,7 @@ namespace QoLEnhanced
 
 
             // [远近兼攻] 获得的瞄准状态增加至3回合；添加弹药被射出时有50%概率不消耗直接复填
-            MslExtensions.QuickMatch("gml_Object_o_pass_skill_thrift_Other_13", "scr_effect_create(o_b_taking_aim", "scr_effect_create(o_b_taking_aim, 3);");
+            MslExtensions.QuickMatchBelow("gml_Object_o_pass_skill_thrift_Other_13", "if (scr_is_ammo_exist() || scr_crossbow_is_armed())", 1, "scr_effect_create(o_b_taking_aim, 3);");
             // 修改技能描述文本，反映新的效果和机制
             // [已迁移到运行时覆写]             Msl.LoadAssemblyAsString("skills").MatchFrom("push.s \"thrift;Уби")
             // .ReplaceBy(ModFiles.GetCode("skills_rebalance_thrift.asm")).Save();
@@ -248,6 +231,22 @@ namespace QoLEnhanced
             // [叫喊] 移除口渴副作用
             // 改进: 移除负面效果，提升技能吸引力
             Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_shout_Other_12.gml"), "gml_Object_o_shout_Other_12");
+
+            // [人类敌人斗志] 大幅减缓人类类敌人的斗志下降速度
+            // 范围: 仅限非玩家、非动物、非亡灵、非吸血鬼单位，避免影响野兽系与异常派系
+            Msl.LoadGML("gml_GlobalScript_scr_morale_reduce")
+                .MatchFrom("argument0 *= (argument1.morale_factor / 100)")
+                .InsertBelow(@"
+            var _qol_reduce_human_morale_loss = false;
+            
+            with (argument1)
+            {
+                _qol_reduce_human_morale_loss = !is_player(id) && typeID != ""undead"" && faction_key != ""Undead"" && faction_key != ""Vampire"";
+            }
+            
+            if (_qol_reduce_human_morale_loss)
+                argument0 *= 0.30;")
+            .Save();
             LogPatchTiming("Block 05.6 Support skills");
 
             #endregion
@@ -338,6 +337,9 @@ namespace QoLEnhanced
 
             Msl.SetStringGMLInFile(base.ModFiles.GetCode("gml_Object_o_hoverSkill_Other_20.gml"), "gml_Object_o_hoverSkill_Other_20");
             Msl.SetStringGMLInFile(base.ModFiles.GetCode("gml_Object_o_hoverRender_Step_2.gml"), "gml_Object_o_hoverRender_Step_2");
+            Msl.SetStringGMLInFile(base.ModFiles.GetCode("gml_Object_o_exploreRender_Other_20.gml"), "gml_Object_o_exploreRender_Other_20");
+            Msl.SetStringGMLInFile(base.ModFiles.GetCode("gml_Object_o_exploreRender_Other_21.gml"), "gml_Object_o_exploreRender_Other_21");
+            Msl.AddNewEvent("o_exploreMenu", base.ModFiles.GetCode("gml_Object_o_exploreMenu_Step_0.gml"), EventType.Step, 0);
             LogPatchTiming("Block 05.10 Alt skill details");
 
             #endregion

@@ -18,6 +18,5 @@ scr_lifeParamsUpdate(sleepHours, _hungerModifier, _thirstyModifier, _intoxicModi
 
 scr_modifier_change(o_player, o_b_fresh, 600 * sleepHours, 7200);
 
-if (_incenseIsOpen)
-{
-}
+if (_incenseIsOpen && sleepHours > 0)
+    scr_psy_negative_states_remove();

@@ -173,6 +173,18 @@ BaseDataCode 中的文件是通过 **UMT (UndertaleModTool)** 反编译得来的
 
 > **记忆口诀**：BaseDataCode 中看到 `argN` → 在注入代码中写成 `argumentN`
 
+#### 规则 1a: `LoadGML` / `MatchFrom` 等匹配字符串里的参数名也必须用完整形式
+
+当你从 BaseDataCode / UMT 反编译文本里抄一行去写 `MatchFrom`、`MatchBelow`、`MatchFromUntil` 的匹配字符串时，**不要保留 `arg0` / `arg1` / `arg2` 这种 UMT 缩写**，必须先改成 `argument0` / `argument1` / `argument2`，否则很容易匹配失败。
+
+```
+❌ 错误:  .MatchFrom("if (arg0 > 0)")
+✅ 正确:  .MatchFrom("if (argument0 > 0)")
+
+❌ 错误:  .MatchFrom("scr_skill_call_passive(arg0, arg1)")
+✅ 正确:  .MatchFrom("scr_skill_call_passive(argument0, argument1)")
+```
+
 #### 规则 2: 避免跨多层作用域的 other 链
 
 `with()` 语句中的 `other` 指向调用方作用域，但嵌套多层 `with()` 时：
@@ -201,6 +213,29 @@ UMT 反编译的 GML 源码在通过 `Msl.LoadGML` 加载时，**行末分号会
 ```
 
 > 查看 `QoLEnhanced.cs` 中已有的 `MatchFrom` 调用可确认此规则（如 `"return scr_chance_value(5)"`, `"range = 2"` 等均无分号）
+
+#### 规则 3a: 原始脚本文本的替代内容里，参数名同样必须写完整形式
+
+这条规则不只适用于“函数定义”和“匹配字符串”，也适用于所有写回去的 GML 文本，包括：
+
+- `ReplaceBy("...")`
+- `InsertBelow("...")` / `InsertAbove("...")`
+- `SetStringGMLInFile` 对应的整段脚本
+- `Codes/` 目录下新增或替换的 `.gml` 文件
+
+只要文本最终会被 MSL 当成 GML 重新编译，里面出现的参数引用就默认应写成 `argumentN`，不要写 `argN`。
+
+```
+❌ 错误:  .InsertBelow("if (arg0 > 0) arg1.value = arg0;")
+✅ 正确:  .InsertBelow("if (argument0 > 0) argument1.value = argument0;")
+```
+
+#### 🔴 注入前自检清单：每次写 `LoadGML` 匹配/替代前都过一遍
+
+1. **参数名检查**：BaseDataCode 里看到的 `argN`，在匹配字符串和替代字符串里都改成 `argumentN`
+2. **分号检查**：`MatchFrom` / `MatchBelow` / `MatchFromUntil` 的匹配字符串末尾去掉 `;`
+3. **作用域检查**：若替代文本要进 `with()`，优先确认是否需要提前 `var` 捕获，避免写出 `other.other`
+4. **唯一性检查**：确认匹配字符串足够独特，避免命中多处
 
 #### 规则 4: BaseDataCode 只读参考，不要照搬
 
@@ -236,6 +271,43 @@ with (o_inv_bone_cradle)
 #### 规则 7: AddFunction 必须在调用方之前注册
 
 `Msl.AddFunction()` 注册的新函数必须在所有引用它的代码（`SetStringGMLInFile`、`InsertBelow` 等）**之前**执行。否则 MSL 编译器无法解析函数调用，导致运行时崩溃。
+
+#### 规则 7a: AddFunction 的注册顺序必须按依赖拓扑排列（高优先级）
+
+如果新增函数之间存在调用关系，顺序必须是：
+
+1. 先注册底层 helper（被调用者）
+2. 再注册上层 helper（调用者）
+3. 最后再注入/替换会调用它们的原版脚本
+
+> 记忆法：**先被调用者，后调用者，最后改原版脚本。**
+
+#### 规则 7b: 为了规避 MSL 解析器脆弱性，helper 默认坚持“一文件一函数”（高优先级）
+
+虽然 GameMaker 语法允许一个文件里写多个函数，但在本项目的 MSL `AddFunction` 工作流里，**默认必须坚持一个 `.gml` 文件只放一个函数**。不要把多个 helper 塞进同一个 `_scr_*.gml` 文件后再一起注册。
+
+> 这样做的目的不是语法正确性，而是降低 MSL 解析、注册名映射、依赖排查时的歧义。
+
+#### 规则 7c: `QuickMatchBelow(...)` 是“替换某行”，不是“在后面追加”（高优先级）
+
+`QuickMatchBelow(gmlName, original, linesAfter, replacement)` 的效果是：
+
+- 先找到 `original`
+- 再向下偏移 `linesAfter`
+- **把那一整行替换成 `replacement`**
+
+它不是插入操作。
+
+因此：
+
+- 要“追加逻辑”，用 `QuickInsertBelow(...)`
+- 要“替掉原版某行”，才用 `QuickMatchBelow(...)`
+
+典型事故：
+
+- 在 `gml_Object_c_container_Other_13` 里误用 `QuickMatchBelow(...)`
+- 会把原版 `script_execute(other.loot_script, ...)` 替掉
+- 最终表现为：任务箱/普通箱打开后直接变空箱
 
 #### 规则 8: `scr_skill_call_passive` 签名速查
 

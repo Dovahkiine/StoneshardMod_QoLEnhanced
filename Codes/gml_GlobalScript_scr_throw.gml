@@ -97,6 +97,8 @@ function scr_throw(argument0, argument1, argument2, argument3)
             // 变量命名：lh = left hand，rh = right hand
             var _rh_type   = "";     // "crossbow" / "range weapons right" / "range weapons left"（后两者均指弓/投石索，区分左右手以便后续处理）"
             var _lh_type   = "";
+            var _rh_melee  = false;
+            var _lh_melee  = false;
 
             if (instance_exists(o_inv_right_hand))
             {
@@ -109,6 +111,10 @@ function scr_throw(argument0, argument1, argument2, argument3)
                             //_lh_weapon = id;
                             if (isCrossbow)       _rh_type = "crossbow";
                             else                  _rh_type = "range weapons right";
+                        }
+                        else
+                        {
+                            _rh_melee = true;
                         }
                     }
                 }
@@ -125,6 +131,10 @@ function scr_throw(argument0, argument1, argument2, argument3)
                             //_rh_weapon = id;
                             if (isCrossbow)       _lh_type = "crossbow";
                             else                  _lh_type = "range weapons left";
+                        }
+                        else
+                        {
+                            _lh_melee = true;
                         }
                     }
                 }
@@ -425,7 +435,32 @@ function scr_throw(argument0, argument1, argument2, argument3)
             }
 
             // ================================================================
-            //  情况 D：单手远程武器，另一只手为空或者是近战武器
+            //  情况 D：近战武器 + 十字弩
+            //  规则：近战每回合照常攻击；十字弩有弹则同回合射击，没弹则同回合免费装填。
+            // ================================================================
+            else if ((_rh_type == "crossbow" && _lh_melee) || (_lh_type == "crossbow" && _rh_melee))
+            {
+                var _cross_slot = (_rh_type == "crossbow") ? o_inv_right_hand : o_inv_left_hand;
+                var _cross_bolt = _scr_extract_crossbow_bolt(_cross_slot);
+
+                if (_cross_bolt != noone)
+                {
+                    arrow = _scr_do_shoot(argument0, argument2, _cross_bolt[0], _cross_bolt[1], _cross_bolt[2]);
+
+                    if (arrow != noone && arrow != -4)
+                        array_push(__qol_throw_arrows, arrow);
+                }
+                else
+                {
+                    scr_crossbow_insert_bolt(false, false, false);
+                    arrow = true;
+                }
+
+                predictor = false;
+            }
+
+            // ================================================================
+            //  情况 E：单手远程武器，另一只手为空
             //  直接使用已检测到的手型变量，不依赖 o_weapon_slot_parent
             // ================================================================
             else if (_rh_type != "" || _lh_type != "")

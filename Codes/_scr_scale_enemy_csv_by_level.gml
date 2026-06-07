@@ -74,8 +74,8 @@ function _scr_scale_enemy_csv_by_level()
             var _stat_f = lerp(0.2, 2, _val / 40);
             if (_col == _col_vit)
             {
-                _val += 20; // 基础活力增加20点
-                var _multiplier = clamp(0.95 + power(_lvl_f, 1.5) * power(_stat_f, 1.25), 1.5, 8.0);
+                _val += 10; // 基础活力增加10点
+                var _multiplier = clamp(0.95 + power(_lvl_f, 1.3) * power(_stat_f, 1.2), 1.0, 8.0);
             }
             else
             {

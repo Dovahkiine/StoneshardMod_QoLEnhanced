@@ -1,0 +1,12 @@
+event_inherited();
+stack = 1;
+max_duration = 1200;
+delay = duration;
+stage = clamp(stage, 100, 200);
+max_stage = 200;
+save_counter = 0;
+scr_buff_atr();
+have_duration = false;
+draw_duration = false;
+have_stages = true;
+event_user(5);

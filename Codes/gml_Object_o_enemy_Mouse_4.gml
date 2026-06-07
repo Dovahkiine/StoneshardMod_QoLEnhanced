@@ -4,6 +4,9 @@ if (global.unit_inspect_id == id)
     exit;
 }
 
+if (keyboard_check(vk_shift) || scr_mouse_on_unit() != id)
+    exit;
+
 var _is_gui = instance_position(global.guiMouseX, global.guiMouseY, c_GUI);
 
 if (_is_gui && _is_gui.object_index != o_context_button)

@@ -338,6 +338,11 @@ namespace QoLEnhanced
             Msl.AddFunction(ModFiles.GetCode("_scr_get_weapon_hand_types.gml"), "gml_GlobalScript__scr_get_weapon_hand_types");
             Msl.AddFunction(ModFiles.GetCode("_scr_residual_charge_on_spell_hit.gml"), "gml_GlobalScript__scr_residual_charge_on_spell_hit");
             Msl.AddFunction(ModFiles.GetCode("_scr_dghub_emit_player_damage.gml"), "gml_GlobalScript__scr_dghub_emit_player_damage");
+            Msl.AddFunction(ModFiles.GetCode("_scr_qol_container_bonus_value.gml"), "gml_GlobalScript__scr_qol_container_bonus_value");
+            Msl.AddFunction(ModFiles.GetCode("_scr_qol_container_bonus_is_bone.gml"), "gml_GlobalScript__scr_qol_container_bonus_is_bone");
+            Msl.AddFunction(ModFiles.GetCode("_scr_qol_container_has_quest_item.gml"), "gml_GlobalScript__scr_qol_container_has_quest_item");
+            Msl.AddFunction(ModFiles.GetCode("_scr_qol_container_bonus.gml"), "gml_GlobalScript__scr_qol_container_bonus");
+            Msl.AddFunction(ModFiles.GetCode("_scr_qol_ore_bonus_gem.gml"), "gml_GlobalScript__scr_qol_ore_bonus_gem");
 
             #endregion
             LogPatchTiming("Function registration");
@@ -369,6 +374,14 @@ namespace QoLEnhanced
                 new MslEvent("gml_Object_o_globalmapTP_Create_0.gml", EventType.Create, 0u),
                 new MslEvent("gml_Object_o_globalmapTP_Other_10.gml", EventType.Other, 10u)
             });
+            GameObjectUtils.ApplyEvent(Msl.AddObject("o_enemy_healthbar", "", "", true, false, true, (CollisionShapeFlags)0), base.ModFiles, (MslEvent[])(object)new MslEvent[5]
+            {
+                new MslEvent("gml_Object_o_enemy_healthbar_Create_0.gml", EventType.Create, 0),
+                new MslEvent("gml_Object_o_enemy_healthbar_Destroy_0.gml", EventType.Destroy, 0),
+                new MslEvent("gml_Object_o_enemy_healthbar_Draw_0.gml", EventType.Draw, 0),
+                new MslEvent("gml_Object_o_enemy_healthbar_Step_0.gml", EventType.Step, 0),
+                new MslEvent("gml_Object_o_enemy_healthbar_Step_2.gml", EventType.Step, 2)
+            });
 
             #endregion
             LogPatchTiming("Object and event registration");
@@ -384,7 +397,7 @@ namespace QoLEnhanced
                     }),
                     new UIComponent("如果有多个选定的标记，前往最近的那个点", "go_to_nearest_mark", (UIComponentType)1, 0)
             });
-            Msl.AddMenu("传送", (UIComponent[])(object)new UIComponent[3]
+            Msl.AddMenu("传送", (UIComponent[])(object)new UIComponent[4]
             {
                 new UIComponent("标记图案", "tp_mark_type", (UIComponentType)0, new string[12]
                 {
@@ -392,7 +405,19 @@ namespace QoLEnhanced
                     "Chest", "Skull"
                 }, false),
                 new UIComponent("允许传送到马车点", "tp_flag_msl", (UIComponentType)1, 0, false),
-                new UIComponent("允许传送到地牢门口", "tp_dungeon_msl", (UIComponentType)1, 0, false)
+                new UIComponent("允许传送到地牢门口", "tp_dungeon_msl", (UIComponentType)1, 0, false),
+                new UIComponent("允许传送到大篷车扎营处", "tp_caravan_msl", (UIComponentType)1, 0, false)
+            });
+            Msl.AddMenu("敌人生命条", (UIComponent[])(object)new UIComponent[8]
+            {
+                new UIComponent("显示生命条", "enemyhealthbars_enabled", UIComponentType.CheckBox, 1, false),
+                new UIComponent("生命条颜色", "enemyhealthbars_color", UIComponentType.ComboBox, new string[2] { "绿色", "红色" }, false),
+                new UIComponent("透明度", "enemyhealthbars_alpha", UIComponentType.Slider, (0, 100), 75, false),
+                new UIComponent("水平定位", "enemyhealthbars_offset_x", UIComponentType.Slider, (-15, 15), 0, false),
+                new UIComponent("垂直定位", "enemyhealthbars_offset_y", UIComponentType.Slider, (-15, 40), -3, false),
+                new UIComponent("高度", "enemyhealthbars_bar_height", UIComponentType.Slider, (1, 8), 2, false),
+                new UIComponent("宽度", "enemyhealthbars_bar_width", UIComponentType.Slider, (8, 64), 23, false),
+                new UIComponent("边框宽度", "enemyhealthbars_border_width", UIComponentType.Slider, (0, 5), 1, false)
             });
 
             #endregion
@@ -408,9 +433,33 @@ namespace QoLEnhanced
             Msl.GetSprite("s_stash_inventory_540_rusty10x7");
             Msl.GetSprite("s_stash_trade_inventory_720_10x7");
             Msl.GetSprite("s_stash_trade_540_rusty10x7");
+            var fullBar = Msl.GetSprite("full_bar");
+            fullBar.OriginX = 0;
+            fullBar.OriginY = 0;
+            var fullBarRounded = Msl.GetSprite("full_bar_rounded");
+            fullBarRounded.OriginX = 0;
+            fullBarRounded.OriginY = 0;
+            var fullBarBorderRounded = Msl.GetSprite("full_bar_w_border_rounded");
+            fullBarBorderRounded.OriginX = 0;
+            fullBarBorderRounded.OriginY = 0;
 
             #endregion
             LogPatchTiming("Sprite registration");
+
+            // 敌人生命条实例生成注入。
+            Msl.LoadGML("gml_Object_o_enemy_Create_0")
+                .MatchAll()
+                .InsertBelow(@"
+if (global.enemyhealthbars_enabled == 1)
+{
+    if (!variable_instance_exists(id, ""__qol_ehb_initialized"") || !__qol_ehb_initialized)
+    {
+        var _healthbar = instance_create_depth(x, y, (depth - 1), o_enemy_healthbar)
+        _healthbar.target = id
+        __qol_ehb_initialized = true
+    }
+}")
+                .Save();
 
             // ========================================================================
             // 功能区块调度 (Feature Block Dispatch)

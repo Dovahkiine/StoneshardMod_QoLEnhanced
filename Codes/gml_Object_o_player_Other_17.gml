@@ -11,7 +11,8 @@ if (!global.skill_activate)
             var inter;
             
             if (object_is_ancestor(object_index, o_particles) || object_is_ancestor(object_index, o_trap))
-                inter = scr_tile_distance(id, o_player) <= 1;
+                // 0.9.4.22.1 原版兼容：使用最小 tile 距离判断大型交互对象/陷阱。
+                inter = scr_tile_distance_min(id, o_player) <= 1;
             else
                 inter = scr_can_interract_posgrid(id, in_grid);
             
@@ -52,5 +53,5 @@ force_stop = false;
 tile_transition = false;            // 在玩家创建后立即关闭 tile_transition，并恢复玩家手动切换的全局速度
 // 在原有的停止移动逻辑基础上增加对 tile_transition 的检查，确保只有在非寻路状态下才调用 _scr_stop_auto_move，避免寻路过程中被意外打断
 // 房间切换后重放玩家自定义全局速度，避免被房间切换流程恢复到默认值。
-if (variable_global_exists(""target_speed""))
+if (variable_global_exists("target_speed"))
     game_set_speed(global.target_speed, gamespeed_fps);

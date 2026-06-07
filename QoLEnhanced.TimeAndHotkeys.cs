@@ -87,6 +87,12 @@ namespace QoLEnhanced
             Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_b_bless_Alarm_2.gml"), "gml_Object_o_b_bless_Alarm_2");
             Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_b_bless_Other_10.gml"), "gml_Object_o_b_bless_Other_10");
 
+            // 精灵祈祷改为永久持续，并根据战斗/脱战状态动态调整倍率
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_b_bless_elf_Create_0.gml"), "gml_Object_o_b_bless_elf_Create_0");
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_b_bless_elf_Alarm_2.gml"), "gml_Object_o_b_bless_elf_Alarm_2");
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_b_bless_elf_Other_10.gml"), "gml_Object_o_b_bless_elf_Other_10");
+            Msl.AddNewEvent("o_b_bless_elf", ModFiles.GetCode("gml_Object_o_b_bless_elf_Other_15.gml"), EventType.Other, 15);
+
 
             #endregion
 

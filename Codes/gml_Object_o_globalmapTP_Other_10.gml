@@ -1,4 +1,4 @@
-if (!global.tp_flag_msl && !global.tp_dungeon_msl)
+if (!global.tp_flag_msl && !global.tp_dungeon_msl && !global.tp_caravan_msl)
 {
     scr_actionsLogUpdate("设置中未勾选，无法使用传送功能。")
     instance_destroy(o_globalmap)
@@ -8,6 +8,8 @@ var _closest_x = undefined
 var _closest_y = undefined
 var _min_distance = -1
 var _mark_type = "Flag"
+var _caravan_grid_x = ds_map_find_value_ext(global.caravanDataMap, "gridX", -1)
+var _caravan_grid_y = ds_map_find_value_ext(global.caravanDataMap, "gridY", -1)
 if (variable_global_exists("tp_mark_type") && is_string(global.tp_mark_type) && global.tp_mark_type != "0")
     _mark_type = global.tp_mark_type
 ds_list_clear(global.globalmapUserMarksList)
@@ -27,7 +29,7 @@ with(o_globalmap)
 }
 var _userMarksNumberFound = 0
 var _userMarksListSize = ds_list_size(global.globalmapUserMarksList)
-var _Locations = ["Osbrook", "Mannshire", "Denbrie", "RottenWillow", "Homestead", "NewOrchard", "Winery", "BrynnSuburbs", "TheDrunkenWoodsmanTavern", "RoadsideInn", "CoalBurners", "OakenGrove", "OsbrookBrewery", "KendricksHomestead", "SouthernOutpost", "BridgeCamp", "RoadsideTower"]
+var _Locations = ["Osbrook", "Mannshire", "Denbrie", "RottenWillow", "Homestead", "NewOrchard", "Winery", "BrynnSuburbs", "TheDrunkenWoodsmanTavern", "RoadsideInn", "CoalBurners", "OakenGrove", "OsbrookBrewery", "Mill", "KendricksHomestead", "SouthernOutpost", "BridgeCamp", "RoadsideTower"]
 for (var _i = 0; _i < _userMarksListSize; _i += 4)
 {
     var _mark = asset_get_index(ds_list_find_value(global.globalmapUserMarksList, _i))
@@ -46,6 +48,12 @@ for (var _i = 0; _i < _userMarksListSize; _i += 4)
                 _closest_y = _gridY
             }
             if (global.tp_dungeon_msl && scr_globaltile_get("dungeon", _gridX, _gridY, -1, global.globaltile_lookup_save) != -1)
+            {
+                _min_distance = _distance
+                _closest_x = _gridX
+                _closest_y = _gridY
+            }
+            if (global.tp_caravan_msl && _gridX == _caravan_grid_x && _gridY == _caravan_grid_y)
             {
                 _min_distance = _distance
                 _closest_x = _gridX
@@ -81,7 +89,10 @@ if (!is_undefined(_closest_x) && !is_undefined(_closest_y))
     // var skip_time = ceil(scr_tile_distance_xy(global.playerGridX, global.playerGridY, _closest_x, _closest_y, 1) * 0.5)
     global.playerGridX = _closest_x
     global.playerGridY = _closest_y
-    global.position_tag = scr_globaltile_get("dungeon", _closest_x, _closest_y, -1, global.globaltile_lookup_save) == -1 ? "fasttravel" : "dungeonExit"
+    if (_closest_x == _caravan_grid_x && _closest_y == _caravan_grid_y)
+        global.position_tag = "caravan"
+    else
+        global.position_tag = scr_globaltile_get("dungeon", _closest_x, _closest_y, -1, global.globaltile_lookup_save) == -1 ? "fasttravel" : "dungeonExit"
     var _smoothChanger = scr_smoothRoomChange(scr_globaltile_get_room(_closest_x, _closest_y), [4], room_speed / 2)
     with (instance_create_depth(-50, -50, 0, o_sleepController))
     {

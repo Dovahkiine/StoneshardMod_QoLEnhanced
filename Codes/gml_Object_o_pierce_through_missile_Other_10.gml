@@ -1,3 +1,10 @@
+// 0.9.4.22.1 原版兼容：owner 已不存在时直接销毁，避免后续读取 owner.STR/PRC/AGL 崩溃。
+if (!instance_exists(owner))
+{
+    instance_destroy();
+    exit;
+}
+
 var _prr = -owner.STR;
 var _fmb = (0.5 * owner.PRC) + (0.5 * owner.AGL);
 

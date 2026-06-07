@@ -53,18 +53,20 @@ function _scr_init_weapon_prefixes()
     // === 消耗减免 ===
     scr_weapon_prefix_generation("Skills_Energy_Cost", "all", 2, [-8, -5], 1, 1);
     scr_weapon_prefix_generation("Spells_Energy_Cost", "all", 2, [-8, -5], 1, 1);
-    scr_weapon_prefix_generation("Cooldown_Reduction", "all", 2, [-8, -5], 4, 1);
+    scr_weapon_prefix_generation("Cooldown_Reduction", "all", 2, [-6, -4], 2, 1);
 
     // === 战斗属性 ===
-    scr_weapon_prefix_generation("PRR",           "Weapon", 1, [4, 6],   1, 1);
-    scr_weapon_prefix_generation("Block_Power",   "all",    1, [4, 6],   1, 0);
-    scr_weapon_prefix_generation("EVS",           "all",    1, [3, 5],   2, 1);
-    scr_weapon_prefix_generation("CTA",           "all",    1, [4, 6],   2, 1);
-    scr_weapon_prefix_generation("Hit_Chance",    "all",    1, [3, 5],   1, 2);
-    scr_weapon_prefix_generation("CRT",           "all",    1, [4, 6],   2, 2);
-    scr_weapon_prefix_generation("CRTD",          "all",    1, [10, 18], 2, 1);
-    scr_weapon_prefix_generation("FMB",           "all",    1, [-5, -3], 1, 3);
-    scr_weapon_prefix_generation("Armor_Piercing","Weapon", 1, [5, 8],   1, 1);
+    scr_weapon_prefix_generation("PRR",             "Weapon", 1, [4, 6],   1, 1);
+    scr_weapon_prefix_generation("Block_Power",     "all",    1, [4, 6],   1, 0);
+    scr_weapon_prefix_generation("EVS",             "all",    1, [3, 5],   2, 1);
+    scr_weapon_prefix_generation("CTA",             "all",    1, [4, 6],   2, 1);
+    scr_weapon_prefix_generation("Hit_Chance",      "all",    1, [3, 5],   1, 2);
+    scr_weapon_prefix_generation("CRT",             "all",    1, [4, 6],   2, 2);
+    scr_weapon_prefix_generation("CRTD",            "all",    1, [10, 18], 2, 1);
+    scr_weapon_prefix_generation("Miracle_Chance",  "all",    1, [4, 6],   2, 2);
+    scr_weapon_prefix_generation("Miracle_Power",   "all",    1, [10, 18], 2, 1);
+    scr_weapon_prefix_generation("FMB",             "all",    1, [-5, -3], 1, 3);
+    scr_weapon_prefix_generation("Armor_Piercing",  "Weapon", 1, [5, 8],   1, 1);
 
     // === 生存属性 ===
     scr_weapon_prefix_generation("Fortitude",        "Armor", 1, [6, 10],  1, 2);

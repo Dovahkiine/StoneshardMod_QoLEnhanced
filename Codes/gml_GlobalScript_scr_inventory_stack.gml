@@ -164,11 +164,20 @@ function scr_inventory_stack(argument0, argument1, argument2, argument3, argumen
                                             stack = _gold_left;
                                             _gold_left = 0;
                                         }
-                                        
+
+                                        // 0.9.4.22.1 原版兼容：把有主物品堆入容器前更新 HasOwner，并触发原版偷窃捕捉逻辑。
+                                        var _has_owner = scr_inv_atr("HasOwner");
+
+                                        if (_has_owner == 1 >> 0)
+                                        {
+                                            scr_inv_atr_set("HasOwner", 2 >> 0);
+                                            scr_npc_catch_stealer();
+                                        }
+
                                         var _item = scr_save_item_single(_id_name, ds_map_clone(data), _container_index, _cell, i_index, charge, stack, equipped, is_deactivated, "N/A");
                                         ds_list_add(_lootList, _item);
                                         ds_list_mark_as_list(_lootList, ds_list_size(_lootList) - 1);
-                                        
+
                                         if (object_index == o_inv_gold)
                                             scr_stack_data_replace(0, stack, other.data);
                                         
@@ -348,6 +357,7 @@ function scr_item_container_sort_by_stack(argument0, argument1, argument2, argum
     
     for (var i = 0; i < _container_info_length; i++)
         array_push(_sorted_containers, _container_info[i][0]);
-    
+
     return _sorted_containers;
 }
+

@@ -1,7 +1,7 @@
 push.v local._gain_xp
 pushi.e 1
 conv.i.v
-push.d 0.15
+push.d 0.25
 conv.d.v
 pushi.e 1
 push.d 0.15

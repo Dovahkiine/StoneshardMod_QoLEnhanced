@@ -3,7 +3,7 @@ if (!is_created && instance_exists(owner))
     is_created = true;
     target = scr_tile_get_instance(xx, yy, 0, 0);
     var _duration = 8, _temp_duration = 0, _shock_damage_static = 0, _knockback_chance = 0, _debuff_chance = 0, _stagger_chance = 0;
-    
+
     with (owner)
     {
         if (is_player())
@@ -17,7 +17,7 @@ if (!is_created && instance_exists(owner))
         _knockback_chance = math_round(40 * ((Magic_Power + Electromantic_Power) / 100));
         _debuff_chance = math_round(85 * ((Magic_Power + Electromantic_Power) / 100));
         _stagger_chance = math_round(100 * ((Magic_Power + Electromantic_Power) / 100));
-        
+
         if (other.is_crit)
         {
             _duration *= max(1, Miracle_Power / 100);
@@ -26,24 +26,24 @@ if (!is_created && instance_exists(owner))
             _stagger_chance *= max(1, Miracle_Power / 100);
         }
     }
-    
+
     _duration = scr_skill_get_duration(_duration, owner);
     _temp_duration = _duration;
     Shock_Damage = max(1, math_round(_shock_damage_static * random_range(20, 220) / 100));
-    
+
     event_inherited();
     scr_skill_damage();
-    
+
     if (instance_exists(target))
     {
         var _impulse = -4;
         var _is_knockback = false;
-        
+
         if (scr_chance_value(_knockback_chance - target.Knockback_Resistance))
             _is_knockback = scr_cast_knockback(owner, target, 1, 0);
-        
+
         _impulse = scr_instance_exists_in_list(o_db_impulse, target.buffs);
-        
+
         if (!_is_knockback && scr_chance_value(_debuff_chance - target.Knockback_Resistance))
             scr_effect_create(o_db_stagger, 2, target, owner);
         
@@ -51,23 +51,38 @@ if (!is_created && instance_exists(owner))
         
         if (_resonance)
         {
-            _resonance.duration += _duration;
+            // 0.9.4.22.1 原版兼容：沿用原版 helper 延长 Resonance，避免直接写 duration 绕过 max_duration。
+            with (_resonance)
+                scr_modifer_duration_change(_duration);
+
             _duration = _resonance.duration;
 
             if (!_impulse)
+            {
                 _impulse = scr_effect_create(o_db_impulse, _duration, target, owner);
+            }
             else
-                _impulse.duration += _duration;
+            {
+                // 0.9.4.22.1 原版兼容：沿用原版 helper 延长 Impulse，保留本 mod 计算出的持续时间并遵守 max_duration。
+                with (_impulse)
+                    scr_modifer_duration_change(_duration);
+            }
         }
 
         if (scr_chance_value(_debuff_chance - target.Shock_Resistance))
         {
             if (!_impulse)
+            {
                 _impulse = scr_effect_create(o_db_impulse, _temp_duration, target, owner);
+            }
             else
-                _impulse.duration += _temp_duration;
+            {
+                // 0.9.4.22.1 原版兼容：沿用原版 helper 延长 Impulse，保留本 mod 计算出的持续时间并遵守 max_duration。
+                with (_impulse)
+                    scr_modifer_duration_change(_temp_duration);
+            }
         }
-        
+
         if (is_player(owner))
         {
             with (o_pass_skill_chain_reaction)
@@ -76,13 +91,13 @@ if (!is_created && instance_exists(owner))
                 event_user(3);
             }
         }
-        
+
         if (!instance_exists(target) || target.HP < 1)
             scr_skill_call_passive(o_pass_skill_recharge, owner, target);
     }
-    
+
     scr_skill_electromancy_water(target, Shock_Damage / 2);
-    
+
     repeat (4 + irandom(4))
     {
         with (instance_create_depth(x + irandom_range(-3, 3), y, 0, o_lighting_particle))

@@ -19,9 +19,23 @@ function scr_unitTurnNext(argument0)
     {
         with (o_player)
         {
-            var _name = scr_actionsLogGetName(id);
-            scr_actionsLogUpdate(_name + "获得了一个连续回合");
-            scr_actionsLogSpeech(id, "speech", "再来！");
+            if (scr_getAgredMobsCount(true))
+            {
+                var _name = scr_actionsLogGetName(id);
+                scr_actionsLogUpdate(_name + "获得了一个连续回合");
+                if (scr_chance_value(40))
+                    scr_actionsLogSpeech(id, "speech", "再来！");
+            }
+
+            // 连动回合会跳过敌方回合推进，因此在这里补上玩家自身的恢复。
+            if (!forceAllTurn)
+            {
+                var _hp_modifier = 1 + (scr_instance_exists_in_list(o_b_hyssop) != -4);
+                var _mp_modifier = 1 + (scr_instance_exists_in_list(o_b_azurecap) != -4);
+                scr_unit_regen(_hp_modifier, _mp_modifier);
+            }
+
+            scr_pain_decrease(true);
             global.free_turn_consumed = true;
         }
 

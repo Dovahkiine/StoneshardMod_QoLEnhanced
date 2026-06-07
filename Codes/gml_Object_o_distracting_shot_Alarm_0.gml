@@ -54,7 +54,7 @@ if (instance_exists(owner))
         var _arrow = -4;
         var _target = nearest_target;
         
-        if (_target)
+        if (instance_exists(_target))
         {
             if (_target.visible)
             {

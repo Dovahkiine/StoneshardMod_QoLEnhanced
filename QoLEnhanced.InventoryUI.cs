@@ -42,7 +42,7 @@ namespace QoLEnhanced
             // [背包扩容] 根据分辨率自适应容器容量
             // 540p (1920x1080): 10列7行 / 720p (2560x1440): 12列11行
             MslExtensions.QuickMatchFromUntil("gml_Object_o_inventory_Create_0",
-            "itemsContainer = scr_guiCreateContainer(id, o_guiContainerEmpty, depth, adaptiveOffsetX, (adaptiveOffsetY + 151))",
+            "itemsContainer = scr_guiCreateContainer(id,",
             "scr_inventory_container_cells_add(id, cellsContainer, 5)", @"
             var _inv_cols = (global.cameraHeight >= 720) ? 12 : 10
             var _inv_rows = (global.cameraHeight >= 720) ? 11 : 7

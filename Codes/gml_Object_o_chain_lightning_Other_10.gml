@@ -68,8 +68,19 @@ if (!is_shield_block)
                 scr_effect_create(o_db_stagger, 2, target, owner);
             
             if (scr_chance_value(_resonance_chance - target.Shock_Resistance))
-                scr_effect_create(o_db_resonance, 4, target, owner);
-            
+            {
+                // 0.9.4.22.1 原版兼容：目标已有 Impulse 时延长持续时间，否则再添加 Resonance。
+                var _impulse = scr_instance_exists_in_list(o_db_impulse, target.buffs);
+
+                if (!_impulse)
+                    scr_effect_create(o_db_resonance, 4, target, owner);
+                else
+                {
+                    with (_impulse)
+                        scr_modifer_duration_change(6);
+                }
+            }
+
             scr_skill_category_change_KD(o_skill_category_electromancy, 1);
         }
         

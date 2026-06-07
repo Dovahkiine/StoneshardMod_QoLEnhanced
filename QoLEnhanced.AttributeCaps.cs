@@ -42,8 +42,7 @@ namespace QoLEnhanced
             .MatchFrom("global.attribute_percent = __dsDebuggerMapCreate()").InsertBelow("scr_add_atr_percent(\"Chain_Turn\");").Save();
             MslExtensions.QuickInsertBelow("gml_Object_o_characterBottomContainer_Other_10", "scr_param_list_add(\"Hit_Chance\", _hitChance)", 
             @"var _chain_turn = 100 * power(0.98, o_player.AGL - 10);
-            ds_map_replace(text_map, ""Chain_Turn"", 100 / _chain_turn);
-            scr_param_list_add(""Chain_Turn"", scr_hoversGetAttributeValueString(""Chain_Turn"", 100 - _chain_turn, false));");
+            scr_param_list_add(""Chain_Turn"", scr_hoversGetAttributeValueString(""Chain_Turn"", 100 - _chain_turn, false), 16777215, -4, [""/*Chain_Turn*/"", 100 / _chain_turn]);");
 
             #endregion
         }

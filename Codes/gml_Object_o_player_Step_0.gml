@@ -30,6 +30,30 @@ else
 var _is_enemy = scr_getAgredMobsCount(true);
 var _is_allow_actions = is_allow_actions();
 
+if (!variable_global_exists("__qol_enemyhealthbars_enabled_prev"))
+    global.__qol_enemyhealthbars_enabled_prev = global.enemyhealthbars_enabled
+if (global.__qol_enemyhealthbars_enabled_prev != global.enemyhealthbars_enabled)
+{
+    global.__qol_enemyhealthbars_enabled_prev = global.enemyhealthbars_enabled
+    if (!global.enemyhealthbars_enabled)
+    {
+        with (o_enemy_healthbar)
+            instance_destroy()
+    }
+    else
+    {
+        with (o_enemy)
+        {
+            if (variable_instance_exists(id, "HP") && HP > 0 && (!variable_instance_exists(id, "__qol_ehb_initialized") || !__qol_ehb_initialized))
+            {
+                var _healthbar = instance_create_depth(x, y, (depth - 1), o_enemy_healthbar)
+                _healthbar.target = id
+                __qol_ehb_initialized = true
+            }
+        }
+    }
+}
+
 if (((_is_allow_actions || (!_is_enemy && !_unit_is_turn)) && ds_list_empty(lock_turn)) || force_move)
 {
     if (step < (path_get_number(path) - 1))
@@ -209,53 +233,56 @@ if (!global.devCamera)
     {
         if (!global.skill_activate)
         {
-            if (_is_allow_actions || (!_is_enemy && !_unit_is_turn))
+            if (global.skill_can_cast)
             {
-                if (!scr_is_cutscene())
+                if (_is_allow_actions || (!_is_enemy && !_unit_is_turn))
                 {
-                    if (can_press())
+                    if (!scr_is_cutscene())
                     {
-                        if (script_execute(_moving_script, 4) || (script_execute(_moving_script, 0) && script_execute(_moving_script, 2)))
-                            scr_keyboard_control((grid_x - 1) * 26, (grid_y - 1) * 26);
-
-                        if (script_execute(_moving_script, 5) || (script_execute(_moving_script, 0) && script_execute(_moving_script, 3)))
-                            scr_keyboard_control((grid_x + 1) * 26, (grid_y - 1) * 26);
-
-                        if (script_execute(_moving_script, 6) || (script_execute(_moving_script, 1) && script_execute(_moving_script, 2)))
-                            scr_keyboard_control((grid_x - 1) * 26, (grid_y + 1) * 26);
-
-                        if (script_execute(_moving_script, 7) || (script_execute(_moving_script, 1) && script_execute(_moving_script, 3)))
-                            scr_keyboard_control((grid_x + 1) * 26, (grid_y + 1) * 26);
-
-                        if (script_execute(_moving_script, 0))
-                            scr_keyboard_control(grid_x * 26, (grid_y - 1) * 26);
-
-                        if (script_execute(_moving_script, 1))
-                            scr_keyboard_control(grid_x * 26, (grid_y + 1) * 26);
-
-                        if (script_execute(_moving_script, 2))
-                            scr_keyboard_control((grid_x - 1) * 26, grid_y * 26);
-
-                        if (script_execute(_moving_script, 3))
-                            scr_keyboard_control((grid_x + 1) * 26, grid_y * 26);
-
-                        if (_is_allow_actions && scr_check_keyboard_array(10))
+                        if (can_press())
                         {
-                            var loot = instance_nearest(x, y, o_loot);
+                            if (script_execute(_moving_script, 4) || (script_execute(_moving_script, 0) && script_execute(_moving_script, 2)))
+                                scr_keyboard_control((grid_x - 1) * 26, (grid_y - 1) * 26);
 
-                            if (instance_exists(loot))
+                            if (script_execute(_moving_script, 5) || (script_execute(_moving_script, 0) && script_execute(_moving_script, 3)))
+                                scr_keyboard_control((grid_x + 1) * 26, (grid_y - 1) * 26);
+
+                            if (script_execute(_moving_script, 6) || (script_execute(_moving_script, 1) && script_execute(_moving_script, 2)))
+                                scr_keyboard_control((grid_x - 1) * 26, (grid_y + 1) * 26);
+
+                            if (script_execute(_moving_script, 7) || (script_execute(_moving_script, 1) && script_execute(_moving_script, 3)))
+                                scr_keyboard_control((grid_x + 1) * 26, (grid_y + 1) * 26);
+
+                            if (script_execute(_moving_script, 0))
+                                scr_keyboard_control(grid_x * 26, (grid_y - 1) * 26);
+
+                            if (script_execute(_moving_script, 1))
+                                scr_keyboard_control(grid_x * 26, (grid_y + 1) * 26);
+
+                            if (script_execute(_moving_script, 2))
+                                scr_keyboard_control((grid_x - 1) * 26, grid_y * 26);
+
+                            if (script_execute(_moving_script, 3))
+                                scr_keyboard_control((grid_x + 1) * 26, grid_y * 26);
+
+                            if (_is_allow_actions && scr_check_keyboard_array(10))
                             {
-                                if (loot.grid_x == grid_x && loot.grid_y == grid_y)
+                                var loot = instance_nearest(x, y, o_loot);
+
+                                if (instance_exists(loot))
                                 {
-                                    if (!instance_exists(o_container_parent))
+                                    if (loot.grid_x == grid_x && loot.grid_y == grid_y)
                                     {
-                                        with (loot)
-                                            mask_index = sprite_index;
+                                        if (!instance_exists(o_container_parent))
+                                        {
+                                            with (loot)
+                                                mask_index = sprite_index;
 
-                                        instance_create_depth(x, y, 0, o_buffer_target);
+                                            instance_create_depth(x, y, 0, o_buffer_target);
 
-                                        with (o_floor_target)
-                                            event_user(0);
+                                            with (o_floor_target)
+                                                event_user(0);
+                                        }
                                     }
                                 }
                             }

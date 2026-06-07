@@ -18,7 +18,7 @@ namespace QoLEnhanced
 
             // [密室机制] 密室出现概率上调至 100%
             // 原值: 5% | 新值: 100% | 目的: 提升地牢探索的多样性和挑战
-            MslExtensions.QuickMatch("gml_GlobalScript_scr_dungeonHasSecretRoom", "return scr_chance_value(5)", "return 1;");
+            MslExtensions.QuickMatch("gml_GlobalScript_scr_dungeonHasSecretRoom", "return", "return 1;");
 
             // [全局亮度] 调整地牢光照颜色，提升视觉体验
             // 作用: 统一所有地形的光照效果，增强视觉一致性
@@ -44,11 +44,7 @@ namespace QoLEnhanced
 
             // [陷阱发现] 陷阱发现几率基于感知属性 (PRC)，移除固定概率
             // 目的: 使陷阱发现与角色属性挂钩，增加游戏平衡性
-            Msl.LoadGML("gml_GlobalScript_scr_trap_find")
-                .MatchFrom("other.trap_find = (0.75").ReplaceBy("other.trap_find = scr_atr(\"PRC\") / R")
-                .MatchFrom("other.trap_find = 0.05").ReplaceBy("other.trap_find = scr_atr(\"PRC\") / R")
-                .MatchFrom("find_chance = 0.5").ReplaceBy("find_chance = scr_atr(\"PRC\") / R")
-                .Save();
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_scr_trap_find.gml"), "gml_GlobalScript_scr_trap_find");
 
             // [刷怪倍率] 敌人生成数量提升至 3 倍
             // 原值: 1x | 新值: 3x | 难度提升: 增加战斗挑战性
@@ -63,10 +59,13 @@ namespace QoLEnhanced
             Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_table_surface_spawn.gml"), "gml_GlobalScript_table_surface_spawn");
 
             // [敌人属性缩放] 在敌人读取参数前按玩家等级刷新怪物属性表，覆盖地牢、地表和事件刷怪
-            Msl.LoadGML("gml_GlobalScript_scr_param").MatchFrom("var _needChange = true").InsertAbove("_scr_scale_enemy_csv_by_level();").Save();
+            Msl.LoadGML("gml_GlobalScript_scr_param").MatchFrom("var _needChange = argument1").InsertAbove("_scr_scale_enemy_csv_by_level();").Save();
 
             // 调整经验值缩放公式，确保在高等级时仍能获得合理的经验奖励，避免过度惩罚玩家
             Msl.LoadAssemblyAsString("gml_Object_o_enemy_Destroy_0").MatchBelow("pop.v.v local._lvl", 14).ReplaceBy(ModFiles.GetCode("gml_Object_o_enemy_Destroy_0_insert.asm")).Save();
+
+            // [矿源伴生宝石] 每次成功挥镐时，根据矿材价值递增概率生成 1 颗伴生宝石
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_c_ore_parent_Other_10.gml"), "gml_Object_c_ore_parent_Other_10");
 
             #endregion
 
@@ -88,15 +87,9 @@ namespace QoLEnhanced
 
             #region 1.4 宝箱奖励机制调整 (Chest Reward Mechanism Adjustments)
 
-            // 增加箱子奖励的数量
-            MslExtensions.QuickMatchBelow("gml_Object_c_container_Other_13", "with (scr_container_create", 5, @"
-            {
-                repeat (2)
-                {
-                    script_execute(other.loot_script, other.loot_script_key, other.loot_script_tier);
-                    randomize();
-                }
-            }");
+            // 保留原版首轮生成，只在首轮生成完成后追加奖励逻辑
+            MslExtensions.QuickInsertBelow("gml_Object_c_container_Other_13", "randomize()",
+            "_scr_qol_container_bonus(other.id, id, other.loot_script, other.loot_script_key, other.loot_script_tier);");
 
             #endregion
 

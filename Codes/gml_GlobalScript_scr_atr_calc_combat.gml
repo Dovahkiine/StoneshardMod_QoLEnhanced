@@ -216,9 +216,9 @@ function scr_atr_calc_combat(argument0, argument1, argument2) // o_inv_slot æ˜¯å
     var _mainRending = scr_inv_param("Rending_Damage", _mainHandItem) * _mainHandDebuff;
     var _offRending = scr_inv_param("Rending_Damage", _offHandItem) * _offHandDebuff;
     var _buffSlashing = scr_buff_param("Slashing_Damage");
-    var _buffPiercing = scr_buff_param("Slashing_Damage");
-    var _buffBlunt = scr_buff_param("Slashing_Damage");
-    var _buffRending = scr_buff_param("Slashing_Damage");
+    var _buffPiercing = scr_buff_param("Piercing_Damage");
+    var _buffBlunt = scr_buff_param("Blunt_Damage");
+    var _buffRending = scr_buff_param("Rending_Damage");
     Slashing_Damage = _mainSlashing + _offSlashing + _buffSlashing;
     Piercing_Damage = _mainPiercing + _offPiercing + _buffPiercing;
     Blunt_Damage = _mainBlunt + _offBlunt + _buffBlunt;

@@ -25,13 +25,14 @@ if (instance_exists(o_player) && instance_exists(o_controller))
 {
     var _target = o_player.id;
 
-    if (MPcost > _target.MP || !_is_ready || (!ds_list_empty(_target.lock_skills) && class == "skill"))
+    if (MPcost > _target.MP || !_is_ready)
+        can_skill_use = false;
+    else if (!ds_list_empty(_target.lock_skills) && class == "skill")
+        can_skill_use = false;
+    else if (class == "spell" && !ds_list_empty(_target.lock_spells))
         can_skill_use = false;
     else
         can_skill_use = true;
-
-    if (class == "spell" && !ds_list_empty(_target.lock_spells))
-        can_skill_use = false;
 }
 
 if (can_skill_use)
