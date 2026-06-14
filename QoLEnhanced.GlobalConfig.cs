@@ -18,7 +18,7 @@ namespace QoLEnhanced
 
             // [密室机制] 密室出现概率上调至 100%
             // 原值: 5% | 新值: 100% | 目的: 提升地牢探索的多样性和挑战
-            MslExtensions.QuickMatch("gml_GlobalScript_scr_dungeonHasSecretRoom", "return", "return 1;");
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_scr_dungeonHasSecretRoom.gml"), "gml_GlobalScript_scr_dungeonHasSecretRoom");
 
             // [全局亮度] 调整地牢光照颜色，提升视觉体验
             // 作用: 统一所有地形的光照效果，增强视觉一致性

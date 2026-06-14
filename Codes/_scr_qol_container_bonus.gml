@@ -28,7 +28,7 @@ function _scr_qol_container_bonus(argument0, argument1, argument2, argument3, ar
     
     var _target_bonus_value = min(5000, max(30, _base_value));
     var _bonus_value = 0;
-    var _coin_value = 3;
+    var _coin_value = 4;
     
     repeat (3)
     {
@@ -69,9 +69,10 @@ function _scr_qol_container_bonus(argument0, argument1, argument2, argument3, ar
     
     if (_bonus_value < _target_bonus_value)
     {
-        var _fallback_value = irandom_range(ceil(_target_bonus_value * 1.2), floor(_target_bonus_value * 1.6));
+        var _deficit = _target_bonus_value - _bonus_value;
+        var _fallback_value = irandom_range(ceil(_deficit * 0.6), _deficit);
         var _coin_count = max(1, ceil(_fallback_value / _coin_value));
-        
+
         with (_container_id)
         {
             scr_inventory_add_item(o_inv_old_coin, id, _coin_count);

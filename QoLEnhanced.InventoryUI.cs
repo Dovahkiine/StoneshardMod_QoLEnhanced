@@ -86,6 +86,28 @@ namespace QoLEnhanced
             with (mask) { sprite_index = other.sprite_index }").Save();
 
             #endregion
+
+            #region 9.3 修复扩容后底行格子被 o_bottompanel 屏蔽点击 (Hotbar Bottom Panel Interaction Fix)
+
+            // [问题] 背包扩容到 12x11 后，最底行格子与屏幕底部 o_bottompanel (depth=-12150) 在 bbox 上重叠，
+            // can_press_gui -> scr_isNearestInstanceDepth 把更靠前的 o_bottompanel 识别为遮挡者，吞掉点击。
+            // [方案] 把 o_bottompanel 加入 global.guiInteractiveExcludedObjectsList，让深度检测忽略它。
+            // o_bottompanel 本身是装饰底板，非交互对象，加入排除列表不影响其他逻辑。
+            Msl.LoadGML("gml_GlobalScript_scr_guiControllerCreate")
+                .MatchFrom("ds_list_add(global.guiInteractiveExcludedObjectsList,")
+                .InsertBelow("ds_list_add(global.guiInteractiveExcludedObjectsList, o_bottompanel)")
+                .Save();
+
+            // [拖拽放置补漏] 物品被拿起后，放置高亮由 scr_item_select_cell_find_nearest()
+            // 每帧计算 select_cell_id。原版实现通过“鼠标中心点下最前方 GUI 实例”查找格子容器，
+            // 但扩容后的底行会被底部面板覆盖，拖拽期间还会有选中物品和高亮对象参与 GUI 深度排序，
+            // 导致格子容器偶尔被前景对象挡住，表现为放置高亮闪烁或第二次拖拽后无法放置。
+            // 这里改为全量替换该 helper：只扫描当前打开的左右库存窗口，并按格子容器自身矩形判定命中。
+            // 这样不依赖脆弱的单行 MatchFrom，也不会把底板、技能栏、拖拽物品或高亮层当成放置目标。
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_scr_item_select_cell_find_nearest.gml"),
+                "gml_GlobalScript_scr_item_select_cell_find_nearest");
+
+            #endregion
         }
     }
 }
