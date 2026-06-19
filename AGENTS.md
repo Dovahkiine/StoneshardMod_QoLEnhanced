@@ -3,7 +3,7 @@
 ## 项目身份
 
 - **模组名称**: QoLEnhanced (品质优化)
-- **目标游戏**: StoneShard (目标版本 `0.9.4.14`)
+- **目标游戏**: StoneShard (当前适配版本 `0.9.4.23`)
 - **模组框架**: [ModShardLauncher](https://github.com/ModShardLauncher/ModShardLauncher) (MSL) — 基于 `UndertaleModLib` 的 GameMaker 游戏模组注入框架
 - **技术栈**: C# (.NET 6.0-windows, WPF) + GML (GameMaker Language) + ASM (Undertale 字节码)
 - **作者**: Dovahkiin
@@ -45,7 +45,7 @@
 遇到以下情况时，**必须先向用户提问确认**，不得自行假设或推断后直接编码：
 
 - 调用不熟悉的 MSL API 或不确定其参数签名时（如 `AddObject` 的参数顺序和含义）
-- 需要了解某个原版游戏函数的完整实现逻辑，但尚未阅读 `../BaseDataCode/`（上级 `ModSources/BaseDataCode/`）中对应文件时
+- 需要了解某个原版游戏函数的完整实现逻辑，但尚未阅读当前版本反编译目录 `../DataCode v9.4.23/` 中对应文件时
 - 涉及 GML 作用域、变量生命周期、MSL 编译行为等底层机制且有歧义时
 - 需要在多种可行方案中选择，而选择会显著影响后续架构时
 - 在 BaseDataCode 或匹配字符串中遇到不明含义的硬编码数字（如 `4719`、`83`）时——**UMT 反编译会将精灵/对象引用替换为数字 ID**，不要自行猜测其含义，直接向用户提问
@@ -101,7 +101,6 @@ ModSources
 │   ├── QoLEnhanced.InventoryUI.cs    # 区块9: 背包与仓库UI
 │   ├── QoLEnhanced.Stacking.cs       # 区块10: 堆叠系统
 │   ├── QoLEnhanced.AttributeCaps.cs  # 区块11: 属性上限
-│   ├── MslExtensions.cs              # 工具类: MslExtensions + GmlInjectionExtensions
 │   ├── Localization.cs               # 本地化文本注入
 │   ├── QoLEnhanced.csproj            # 项目配置
 │   ├── QoLEnhanced.slnx              # 解决方案
@@ -117,7 +116,8 @@ ModSources
 │   ├── Sprites/                      # 🖼️ UI 贴图 (540p / 720p 两种规格)
 │   ├── lib/                          # 依赖 DLL (ModShardLauncher.dll, UndertaleModLib.dll)
 │   └── tmp/                          # 临时导出文件
-└── BaseDataCode/         # 📚 原始游戏反编译脚本（位于 `ModSources\BaseDataCode\`，用于 MSL 匹配定位）
+├── BaseDataCode/             # 📚 旧版本反编译脚本，用于版本差异比对
+└── DataCode v9.4.23/         # 📚 当前版本反编译脚本，用于 MSL 匹配定位
 ```
 
 ## 架构核心：MSL 注入机制
@@ -129,7 +129,8 @@ ModSources
 | 目录 | 性质 | 用途 |
 |------|------|------|
 | `Codes/` | ✏️ 手写/修改的脚本 | 会被注入到游戏中，是实际生效的代码 |
-| `BaseDataCode/` | 📖 只读参考 | 原始游戏反编译文件，位于 `../BaseDataCode/`，用于了解原版逻辑和定位匹配字符串 |
+| `DataCode v9.4.23/` | 📖 只读参考 | 当前游戏版本反编译文件，位于 `../DataCode v9.4.23/`，用于了解原版逻辑和定位匹配字符串 |
+| `BaseDataCode/` | 📖 历史基线 | 旧版本反编译文件，位于 `../BaseDataCode/`，只用于版本差异比对 |
 
 ### 事件编号速查
 
@@ -288,27 +289,6 @@ with (o_inv_bone_cradle)
 
 > 这样做的目的不是语法正确性，而是降低 MSL 解析、注册名映射、依赖排查时的歧义。
 
-#### 规则 7c: `QuickMatchBelow(...)` 是“替换某行”，不是“在后面追加”（高优先级）
-
-`QuickMatchBelow(gmlName, original, linesAfter, replacement)` 的效果是：
-
-- 先找到 `original`
-- 再向下偏移 `linesAfter`
-- **把那一整行替换成 `replacement`**
-
-它不是插入操作。
-
-因此：
-
-- 要“追加逻辑”，用 `QuickInsertBelow(...)`
-- 要“替掉原版某行”，才用 `QuickMatchBelow(...)`
-
-典型事故：
-
-- 在 `gml_Object_c_container_Other_13` 里误用 `QuickMatchBelow(...)`
-- 会把原版 `script_execute(other.loot_script, ...)` 替掉
-- 最终表现为：任务箱/普通箱打开后直接变空箱
-
 #### 规则 8: `scr_skill_call_passive` 签名速查
 
 ```gml
@@ -342,10 +322,11 @@ Msl.LoadGML("目标脚本名")     // 加载为 GML 源码上下文
 最精确、最安全的方式。匹配原始 GML 源码中的字符串并替换。
 
 ```csharp
-MslExtensions.QuickMatch("gml_GlobalScript_scr_trap_find", "find_chance = 0.5", "find_chance = scr_atr(\"PRC\") / R");
+Msl.LoadGML("gml_GlobalScript_scr_trap_find")
+    .MatchFrom("find_chance = 0.5")
+    .ReplaceBy("find_chance = scr_atr(\"PRC\") / R")
+    .Save();
 ```
-
-对应底层调用: `Msl.LoadGML(...).MatchFrom(old).ReplaceBy(new).Save()`
 
 #### 模式 2: 汇编级替换 (LoadAssemblyAsString)
 
@@ -363,8 +344,10 @@ Msl.LoadAssemblyAsString("gml_GlobalScript_table_attributes")
 用 `MatchFromUntil` 圈定范围，整体替换为一个文件内容。
 
 ```csharp
-MslExtensions.QuickMatchBelowFiles("gml_Object_o_skill_enchantment_Other_11", "if (image_alpha", 2,
-    ModFiles, "gml_Object_o_skill_enchantment_Other_11_instead.gml");
+Msl.LoadGML("gml_Object_o_skill_enchantment_Other_11")
+    .MatchFromUntil("if (image_alpha", "目标结束锚点")
+    .ReplaceBy(ModFiles.GetCode("gml_Object_o_skill_enchantment_Other_11_instead.gml"))
+    .Save();
 ```
 
 #### 模式 4: 函数注册 (AddFunction)
@@ -416,17 +399,7 @@ GameObjectUtils.ApplyEvent(
 
 > `MslEvent` 的构造函数: `(string fileName, EventType type, int subtype)`
 
-#### 模式 7: 原始行级操作 (QuickInject/QuickReplace/QuickReplaceRange)
-
-通过 `MslExtensions` 工具类操作反汇编后的原始文本行：
-
-```csharp
-MslExtensions.QuickInject("gml_Object_o_player_Step_0", ":[end]", someCode);
-MslExtensions.QuickReplace("gml_GlobalScript_table_text", "call.i @@NewGMLArray@@", newLine);
-MslExtensions.QuickReplaceRange("gml_Object_o_player_Step_0", "pop.v.v self.max_xp", 5, newCode);
-```
-
-#### 模式 8: UI/菜单注入
+#### 模式 7: UI/菜单注入
 
 ```csharp
 Msl.AddMenu("自动寻路", new UIComponent[2] { ... });
@@ -438,44 +411,11 @@ Msl.AddObject("o_globalmapTP", "s_gui_button_skipturn", "o_button", true, false,
 
 | 场景 | 推荐方式 |
 |------|---------|
-| 修改单个值/常量 | `QuickMatch` (模式1) |
+| 修改单个值/常量 | `LoadGML` + `MatchFrom` + `ReplaceBy` (模式1) |
 | 修改 table_* 中的技能描述 | `LoadAssemblyAsString` + `MatchFrom/ReplaceBy` + `.asm` 文件 (模式2) |
 | 替换整个函数实现 | `SetStringGMLInFile` (模式5) |
 | 新增可复用函数 | `AddFunction` (模式4) |
 | 在现有逻辑中插入新代码 | `LoadGML` + `InsertBelow` (模式6) |
-| 操作反汇编文本行 | `QuickInject` / `QuickReplace` / `QuickReplaceRange` (模式7) |
-
-## MslExtensions 工具类 (MslExtensions.cs)
-
-项目内部封装了一套 MSL 操作便利方法，分为四个区块：
-
-### A: 基础替换
-- `QuickMatch(gmlName, original, replacement)` — 精确匹配 + 替换
-- `QuickMatchBelow(gmlName, original, linesAfter, replacement)` — 匹配后偏移 N 行替换
-- `QuickMatchFromUntil(gmlName, from, until, replacement)` — 范围替换
-
-### B: 文件导入替换
-- `QuickMatchFiles` — 匹配替换为外部文件
-- `QuickMatchAll` — 全量替换为外部文件
-- `QuickMatchFromUntilFiles` — 范围替换为外部文件
-
-### C: 插入操作
-- `QuickInsertBelow` — 文本插入
-- `QuickInsertBelowFiles` — 文件内容插入
-
-### D: 高级操作
-- `QuickMatchBelowFiles` — 偏移+文件替换
-- `QuickAssemblyMatchBelowFiles` — 汇编级偏移+文件替换
-- `QuickInject` / `QuickReplace` / `QuickReplaceRange` — 行级注入/替换
-
-## GmlInjectionExtensions (MslExtensions.cs)
-
-针对 `IEnumerable<string>` (反汇编文本行流) 的扩展方法：
-- `InjectIf` — 匹配行前插入
-- `ReplaceIf` — 匹配行替换
-- `ReplaceRangeIf` — 匹配行 + 删除后续 N 行 + 插入新代码
-
-所有方法在未匹配时弹出 WPF 提示框，用于调试定位。
 
 ---
 
@@ -619,8 +559,8 @@ Msl.AddObject("o_globalmapTP", "s_gui_button_skipturn", "o_button", true, false,
 
 ### 添加新功能的标准流程
 
-1. **研究原版逻辑** — 在 `../BaseDataCode/`（上级 `ModSources/BaseDataCode/`）中找到目标脚本，理解原始实现
-2. **确定注入策略** — 根据修改范围选择操作模式（替换值 → QuickMatch; 新函数 → AddFunction; 全量替换 → SetStringGMLInFile）
+1. **研究原版逻辑** — 在 `../DataCode v9.4.23/`（上级 `ModSources/DataCode v9.4.23/`）中找到目标脚本，理解当前版本实现
+2. **确定注入策略** — 根据修改范围选择操作模式（替换值 → `LoadGML` 链式匹配; 新函数 → AddFunction; 全量替换 → SetStringGMLInFile）
 3. **转换命名规范** — 将 BaseDataCode 中看到的 `argN` 改写为 `argumentN`（参见上方 MSL 编译规范），用 `var` 捕获替代多层 `other.other` 链
 4. **编写脚本** — 在 `Codes/` 中创建 `.gml` 或 `.asm` 文件
 5. **注册注入** — 在 `QoLEnhanced.cs` 的 `PatchMod()` 中添加注入代码，放入合适的区块/region
@@ -633,11 +573,12 @@ Msl.AddObject("o_globalmapTP", "s_gui_button_skipturn", "o_button", true, false,
 - **匿名函数问题**：MSL 反编译/重编译时匿名函数会生成随机脚本 ID，应抽成独立命名脚本（参照 `SKILL.md` 中的解决方案）
 - **匹配字符串必须有唯一性**：如果 `MatchFrom` 匹配到多处，注入行为不可预测
 
-### BaseDataCode 使用方式
+### 原版反编译目录使用方式
 
-- **不要修改** BaseDataCode 中的任何文件
-- 此目录位于 `../BaseDataCode/`（即 `ModSources/BaseDataCode/`），不在 QoLEnhanced 子目录下
-- 当需要了解某个原版函数的实现时，在此目录中搜索对应的 `.gml` 文件
+- **不要修改** `DataCode v9.4.23/` 或 `BaseDataCode/` 中的任何文件
+- 当前版本目录位于 `../DataCode v9.4.23/`，历史基线目录位于 `../BaseDataCode/`，二者都不在 QoLEnhanced 子目录下
+- 当需要了解某个原版函数的实现时，优先在当前版本目录中搜索对应的 `.gml` 文件
+- 只有做版本差异比对时，才同时读取 `BaseDataCode/`
 - 找到关键的代码行后，将其用作 `MatchFrom` 的匹配字符串
 - 此目录文件巨大（如 `DialogueData.gml` 1.4MB），不要全量加载
 
@@ -710,7 +651,6 @@ if (instance_exists(o_player))
 
 ## 调试与诊断
 
-- `MslExtensions` 中的所有方法在未匹配时通过反射调用 WPF `MessageBox.Show` 弹出警告
 - `debug.gml` 是编译后生成的完整代码副本，用于验证最终注入结果
 - `ExportTable()` 方法可将游戏数据表导出为 TSV 文件到 `tmp/` 目录
 - 被注释掉的代码块（如 L51-92 的搜索工具、L1108-1115 的 1080p 适配）是历史实验或备用方案

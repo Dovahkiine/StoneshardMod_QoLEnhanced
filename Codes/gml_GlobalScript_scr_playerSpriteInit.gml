@@ -10,7 +10,8 @@ function scr_playerSpriteInit()
     global.playerSpriteGround = -4;
     global.playerSpriteImageNumberX = 0;
     global.playerSpriteImageNumberY = 0;
-    global.playerSpriteArray = [-4, -4, -4, -4];
+    // 0.9.4.23 兼容：原版新增第 5 个缓存槽，用于分离主体与遮罩索引。
+    global.playerSpriteArray = [-4, -4, -4, -4, -4];
     global.playerSpriteSpeed = 0;
     global.playerSpriteIndex = 0;
     global.playerSpriteUpdate = false;

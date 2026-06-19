@@ -34,6 +34,10 @@ if (!is_created && instance_exists(owner))
     event_inherited();
     scr_skill_damage();
 
+    // 0.9.4.23 兼容：Recharge 被动提前到伤害结算后，避免目标死亡后被后续逻辑跳过。
+    if (!instance_exists(target) || target.HP < 1)
+        scr_skill_call_passive(o_pass_skill_recharge, owner, target);
+
     if (instance_exists(target))
     {
         var _impulse = -4;
@@ -46,9 +50,9 @@ if (!is_created && instance_exists(owner))
 
         if (!_is_knockback && scr_chance_value(_debuff_chance - target.Knockback_Resistance))
             scr_effect_create(o_db_stagger, 2, target, owner);
-        
+
         var _resonance = scr_instance_exists_in_list(o_db_resonance, target.buffs);
-        
+
         if (_resonance)
         {
             // 0.9.4.22.1 原版兼容：沿用原版 helper 延长 Resonance，避免直接写 duration 绕过 max_duration。
@@ -92,8 +96,6 @@ if (!is_created && instance_exists(owner))
             }
         }
 
-        if (!instance_exists(target) || target.HP < 1)
-            scr_skill_call_passive(o_pass_skill_recharge, owner, target);
     }
 
     scr_skill_electromancy_water(target, Shock_Damage / 2);

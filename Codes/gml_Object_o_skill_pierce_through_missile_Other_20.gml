@@ -19,7 +19,8 @@ if (_can_interract)
         with (target)
         {
             if (object_is_ancestor(object_index, o_unit) || object_index == o_attacked_target)
-                array_push(_id.mark_array, scr_onUnitEffectCreate(id, 1865, -152, 0, 0, true));
+                // 0.9.4.23 兼容：使用新版原版标记对象，避免沿用旧 UMT 数字 ID。
+                array_push(_id.mark_array, scr_onUnitEffectCreate(id, o_onUnitEffectGroundmarker, -152, 0, 0, true));
         }
 
         use_count--;

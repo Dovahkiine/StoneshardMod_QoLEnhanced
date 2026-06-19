@@ -215,11 +215,9 @@ function scr_atr_calc(argument0, argument1)
                     Bleeding_Resistance = _resistance_max;
                     Stun_Resistance = _resistance_max;
 
-                    if (!Knockback_Immunity)
-                        Knockback_Resistance = clamp(bKnockback_Resistance + scr_buff_param("Knockback_Resistance"), -100, _resistance_max);
-
-                    if (!Stun_Immunity)
-                        Stun_Resistance = clamp(bStun_Resistance + scr_buff_param("Stun_Resistance"), -100, _resistance_max);
+                    // 0.9.4.23 兼容：原版改为始终刷新抗性数值，免疫只影响后续结算。
+                    Knockback_Resistance = clamp(bKnockback_Resistance + scr_buff_param("Knockback_Resistance"), -100, _resistance_max);
+                    Stun_Resistance = clamp(bStun_Resistance + scr_buff_param("Stun_Resistance"), -100, _resistance_max);
 
                     if (!Bleeding_Immunity)
                         Bleeding_Resistance = clamp(bBleeding_Resistance + scr_buff_param("Bleeding_Resistance"), -100, _resistance_max);

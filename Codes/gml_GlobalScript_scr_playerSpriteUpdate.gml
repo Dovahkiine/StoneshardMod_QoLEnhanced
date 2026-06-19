@@ -155,10 +155,12 @@ function scr_playerSpriteUpdate()
 
     if (_imageNumberY == 2)
     {
+        // 0.9.4.23 兼容：先缓存主体索引，避免移动遮罩槽时覆盖原值。
+        var _playerSpriteIndex = global.playerSpriteArray[0];
         var _maskSpriteIndex = global.playerSpriteArray[1];
-        global.playerSpriteArray[1] = global.playerSpriteArray[0];
-        global.playerSpriteArray[2] = global.playerSpriteArray[0];
-        global.playerSpriteArray[3] = global.playerSpriteArray[0];
+        global.playerSpriteArray[1] = _playerSpriteIndex;
+        global.playerSpriteArray[2] = _playerSpriteIndex;
+        global.playerSpriteArray[3] = _playerSpriteIndex;
         global.playerSpriteArray[4] = _maskSpriteIndex;
     }
 

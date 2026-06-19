@@ -5,7 +5,7 @@ if (instance_exists(owner) && instance_exists(target) && !target.persistent)
     var _debuff_damage_static = 0;
     var _is_immob = 0;
     var _immob_chance = 0;
-    
+
     if (_is_open)
     {
         with (owner)
@@ -28,7 +28,7 @@ if (instance_exists(owner) && instance_exists(target) && !target.persistent)
 
         var _length = array_length(_enemy_count_array);
         var _enemy_count = 1;
-        
+
         for (var i = 0; i < _length; i++)
         {
             with (_enemy_count_array[i])
@@ -37,14 +37,21 @@ if (instance_exists(owner) && instance_exists(target) && !target.persistent)
                     _enemy_count++;
             }
         }
-        
+
         boost_damage = _enemy_count;
     }
-    
+
     Shock_Damage = math_round(_debuff_damage_static * boost_damage);
     var _dmg = scr_damage_with_calc(target, true, 0, id, true);
     scr_skill_call_passive(o_pass_skill_conduit, owner, target, false, "", _dmg);
-    
+
+    // 0.9.4.23 兼容：伤害后立即结算 Recharge 被动，和原版击杀时机保持一致。
+    if (owner != target)
+    {
+        if (!instance_exists(target) || target.HP < 1)
+            scr_skill_call_passive(o_pass_skill_recharge, owner, target);
+    }
+
     repeat (4 + random(4))
     {
         with (instance_create_depth(target.x + random_range(-3, 3), target.y, 0, o_lighting_particle))
@@ -53,7 +60,7 @@ if (instance_exists(owner) && instance_exists(target) && !target.persistent)
             direction = random_range(20, 160);
         }
     }
-    
+
     if (_is_immob)
     {
         if (scr_cast_knockback(owner, target, 1, 0) && _is_open && _immob_chance)

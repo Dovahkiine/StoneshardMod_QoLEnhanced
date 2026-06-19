@@ -197,7 +197,7 @@ Changed QoLEnhanced-impacting target records: 24
 ## `gml_Object_o_inv_aqua_vitae_Create_0` (Code)
 
 - Source: `QoLEnhanced.Consumables.cs`
-- Method: MslExtensions.QuickMatch
+- Method: LoadGML Match/ReplaceBy
 - Size diff: changed_size, old=117, new=97, delta=-20
 - Old path: `D:\Downloads\StoneShard_Lib\ModShardLauncher-Enhanced\ModSources\BaseDataCode\gml_Object_o_inv_aqua_vitae_Create_0.gml`
 - New path: `D:\Downloads\StoneShard_Lib\ModShardLauncher-Enhanced\ModSources\DataCode v9.4.23\gml_Object_o_inv_aqua_vitae_Create_0.gml`
@@ -207,7 +207,7 @@ Changed QoLEnhanced-impacting target records: 24
 ## `gml_Object_o_inv_cleansing_goblet_water_Create_0` (Code)
 
 - Source: `QoLEnhanced.Consumables.cs`
-- Method: MslExtensions.QuickMatch
+- Method: LoadGML Match/ReplaceBy
 - Size diff: changed_size, old=361, new=305, delta=-56
 - Old path: `D:\Downloads\StoneShard_Lib\ModShardLauncher-Enhanced\ModSources\BaseDataCode\gml_Object_o_inv_cleansing_goblet_water_Create_0.gml`
 - New path: `D:\Downloads\StoneShard_Lib\ModShardLauncher-Enhanced\ModSources\DataCode v9.4.23\gml_Object_o_inv_cleansing_goblet_water_Create_0.gml`
@@ -217,7 +217,7 @@ Changed QoLEnhanced-impacting target records: 24
 ## `gml_Object_o_inv_shovel_Create_0` (Code)
 
 - Source: `QoLEnhanced.SkillsAndCombat.cs`
-- Method: MslExtensions.QuickMatch
+- Method: LoadGML Match/ReplaceBy
 - Size diff: changed_size, old=236, new=238, delta=2
 - Old path: `D:\Downloads\StoneShard_Lib\ModShardLauncher-Enhanced\ModSources\BaseDataCode\gml_Object_o_inv_shovel_Create_0.gml`
 - New path: `D:\Downloads\StoneShard_Lib\ModShardLauncher-Enhanced\ModSources\DataCode v9.4.23\gml_Object_o_inv_shovel_Create_0.gml`
