@@ -150,9 +150,9 @@ function scr_atr_calc(argument0, argument1)
                     Pain_Change = scr_buff_param("Pain_Change");
                     Pain_K = 1;
                     var _total_attributes = STR + AGL + Vitality + PRC + WIL; // QoL: 五维属性总和影响伤害增减
-                    Lifesteal = bLifesteal + scr_buff_param("Lifesteal") + (STR + AGL + Vitality + PRC + WIL) * 0.01; // QoL: 五维属性总和传导生命偷取
-                    Manasteal = bManasteal + scr_buff_param("Manasteal") + (STR + AGL + Vitality + PRC + WIL) * 0.01; // QoL: 五维属性总和传导法力偷取
-                    Damage_Received = clamp((bDamage_Received + scr_buff_param("Damage_Received")) * power(0.99, _total_attributes / 1.5), 5, 200); // QoL: 五维之和降低受伤
+                    Lifesteal = bLifesteal + scr_buff_param("Lifesteal") + _total_attributes * 0.01; // QoL: 五维属性总和传导生命偷取
+                    Manasteal = bManasteal + scr_buff_param("Manasteal") + _total_attributes * 0.01; // QoL: 五维属性总和传导法力偷取
+                    Damage_Received = clamp((bDamage_Received + scr_buff_param("Damage_Received")) * power(0.99, _total_attributes / 2), 10, 200); // QoL: 五维之和降低受伤
                     Damage_Returned = clamp(bDamage_Returned + scr_buff_param("Damage_Returned"), 0, 100);
                     Pyromantic_Power = scr_buff_param("Pyromantic_Power") + bPyromantic_Power;
                     Geomantic_Power = scr_buff_param("Geomantic_Power") + bGeomantic_Power;
@@ -409,6 +409,23 @@ function scr_atr_calc(argument0, argument1)
             MP_Restoration = clamp(scr_inv_buff_atr("MP_Restoration") + (Vitality * 2), 0, 1000);
             scr_characterStatsUpdateMin("healthLowest", (HP / max_hp) * 100);
             Fortitude = clamp(scr_inv_buff_atr("Fortitude") + (_bonusWIL * 7.5), -100, 200);
+            
+            // 近战专注抗控补偿：
+            // 原版 debuff 创建统一走 scr_effect_create，并在 o_debuff 子类上使用 target.Fortitude 缩短持续时间。
+            // 因此这里不重写每个 o_db_* 或 scr_effect_create，只在玩家属性汇总阶段给合格近战构筑增加 Fortitude。
+            // 触发条件由 _scr_qol_is_melee_focus 统一判断：
+            // - 双手空手视作近战；
+            // - 至少一件非射击武器视作近战；
+            // - 法术技能数量必须少于其他类别技能数量，防止纯法师或重法术混合构筑借到近战抗控。
+            if (_scr_qol_is_melee_focus())
+            {
+                // 五维权重按近战受控痛点分配：
+                // Vitality 最高，代表硬抗控制链和状态负担；
+                // WIL 次高，沿用原版 Fortitude 的精神耐受定位；
+                // STR/AGL/PRC 只提供较小补正，避免单一输出属性直接堆成满免疫。
+                var _qol_melee_focus_fortitude = clamp((STR * 0.20) + (AGL * 0.15) + (Vitality * 0.45) + (PRC * 0.10) + (WIL * 0.30), 0, 80);
+                Fortitude = clamp(Fortitude + _qol_melee_focus_fortitude, -100, 200);
+            }
             var _weight = 0;
 
             with (o_inv_weapon_slot)

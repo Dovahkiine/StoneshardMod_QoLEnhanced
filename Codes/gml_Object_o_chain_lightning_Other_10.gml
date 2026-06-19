@@ -98,6 +98,7 @@ if (_target_alive)
 
 var _target_array = array_create(0);
 var _owner_id = instance_exists(owner) ? owner.id : -4;
+var _use_tile_distance = _target_alive && instance_exists(target);
 
 with (o_unit)
 {
@@ -106,7 +107,11 @@ with (o_unit)
     if (id == _owner_id || id == other.target)
         continue;
 
-    var _distance = scr_tile_distance(id, other);
+    var _distance;
+    if (_use_tile_distance)
+        _distance = scr_tile_distance(id, other.target);
+    else
+        _distance = point_distance(x, y, other.x, other.y) div 26;
 
     if (_distance < 16)
         array_push(_target_array, id, _distance);

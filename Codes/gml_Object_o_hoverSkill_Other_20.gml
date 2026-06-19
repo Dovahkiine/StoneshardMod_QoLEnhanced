@@ -1146,7 +1146,7 @@ else
                     case "Knockback_Chance": __form = "60 + (2 * STR)"; break;
                     case "Stun_Resistance": __form = "-(AGL + PRC)"; break;
                     case "Knockback_Resistance": __form = "-(AGL + PRC)"; break;
-                    case "Block_Power": __form = "-(3 * STR)"; break;
+                    case "Block_Power": __form = "-((1.5 * STR) + 20)"; break;
                     case "Stagger_Chance": __form = "80 + (2 * AGL)"; break;
                     case "Crit_Avoid": __form = "-(1.5 * PRC)"; break;
                     case "Hit_Chance": __form = "100 + (2 * PRC)"; break;
@@ -1227,8 +1227,8 @@ else
                 {
                     case "Knockback_Chance": __form = "(75 * (Magic_Power + Geomantic_Power)) / 100"; break;
                     case "HP": __form = "scr_runic_boulder_get_hp()"; break;
-                    case "Arcane_Damage": __form = "(4 * (1 + (Geomantic_Power / 100)) * Magic_Power) / 100"; break;
-                    case "Arcane_Damage_Self": __form = "(4 * (1 + (Geomantic_Power / 100)) * Magic_Power) / 100"; break;
+                    case "Arcane_Damage": __form = "(6 * (1 + (Geomantic_Power / 100)) * Magic_Power) / 100"; break;
+                    case "Arcane_Damage_Self": __form = "(6 * (1 + (Geomantic_Power / 100)) * Magic_Power) / 100"; break;
                     case "MP_turn": __form = "-3"; break;
                 }
             break;

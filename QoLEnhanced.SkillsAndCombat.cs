@@ -115,6 +115,24 @@ namespace QoLEnhanced
             Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_skill_tempest_Other_17.gml"), "gml_Object_o_skill_tempest_Other_17");
             LogPatchTiming("Block 05.2 Tempest");
 
+            // [符文巨石] 不再遮挡玩家视野。
+            // 原版在巨石 Create 时向 o_controller.wallgrid 写入 bit 1，ctr_fog_raycast 会把该 bit 当成视野遮挡，
+            // 因此巨石会像墙/树丛一样截断玩家视野。这里仅移除视野墙网登记，不改巨石对象本身、碰撞或可被攻击逻辑。
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_runic_boulder_Create_0.gml"), "gml_Object_o_runic_boulder_Create_0");
+
+            // 与 Create 的移除成对处理：既然不再写入 bit 1，Destroy 也不能无条件移除 bit 1，
+            // 避免巨石消失时误清同格原本存在的地形视野标记。
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_runic_boulder_Destroy_0.gml"), "gml_Object_o_runic_boulder_Destroy_0");
+            // [符文巨石重做] 下面三个脚本都是高风险生命周期脚本，采用全量替换而不是局部 MatchFrom：
+            // Alarm_1 承载召唤完成后的 HP、上限、落点伤害/吸引、合并触发；
+            // Step_0 承载每回合崩塌判定；
+            // scr_runic_boulder_get_hp 集中生命值公式，方便后续只调一处。
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_runic_boulder_Alarm_1.gml"), "gml_Object_o_runic_boulder_Alarm_1");
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_runic_boulder_Step_0.gml"), "gml_Object_o_runic_boulder_Step_0");
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_runic_boulder_Draw_0.gml"), "gml_Object_o_runic_boulder_Draw_0");
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_runic_boulder_Other_12.gml"), "gml_Object_o_runic_boulder_Other_12");
+            Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_scr_runic_boulder_get_hp.gml"), "gml_GlobalScript_scr_runic_boulder_get_hp");
+            LogPatchTiming("Block 05.2 Runic boulder rework");
 
             // [残余电荷] 法术命中触发减抗 — 球状闪电/静电场
             Msl.LoadGML("gml_Object_o_ball_lightning_Other_10")
@@ -140,6 +158,26 @@ namespace QoLEnhanced
             // table_skills_stats 已在 PatchMod 主函数的表格替换区统一处理
             MslExtensions.QuickMatch("gml_Object_o_war_cry_birth_Other_10", "var _range", "var _range = 15;");
             Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_war_cry_impact_Other_11.gml"), "gml_Object_o_war_cry_impact_Other_11");
+            // [猛踹] 降低对格挡条的单次压制。
+            // 原版实际扣除位置在 o_power_kick_Alarm_0：
+            //   (-(3 * owner.STR) * target.Block_PowerMax) / 100
+            // 也就是把 3*STR 当成“最大格挡百分比”扣除。高 STR 敌人会轻易超过 100%，
+            // 在本模组提高盾牌 Block_PowerMax 后尤其容易把近战盾牌构筑一脚踢空。
+            // 新公式改成“目标最大格挡 45%”和“施放者 STR 线性值”两者取小：
+            // - 仍然能明显压制盾牌；
+            // - 不再因为敌人后期 STR 放大而无上限清空整条格挡；
+            // - 读取 target.Block_PowerMax 必须放在 Alarm_0 命中后的实际目标上下文，不能只改技能数据刷新事件。
+            Msl.LoadGML("gml_Object_o_power_kick_Alarm_0")
+                .MatchFrom(@"scr_temp_effect_update(object_index, target, ""Block_Power""")
+                .ReplaceBy(@"var _qol_block_power_penalty = min(target.Block_PowerMax * 0.45, (1.5 * owner.STR) + 20);
+        scr_temp_effect_update(object_index, target, ""Block_Power"", -_qol_block_power_penalty, 4, 2);")
+                .Save();
+            // 同步技能数据中的 Block_Power 数值。这里没有可靠 target，只展示施放者侧的线性上限，
+            // 实际命中时仍会再受 target.Block_PowerMax * 0.45 限制。
+            Msl.LoadGML("gml_Object_o_skill_power_kick_Other_17")
+                .MatchFrom(@"ds_map_replace(data, ""Block_Power""")
+                .ReplaceBy(@"ds_map_replace(data, ""Block_Power"", -((1.5 * owner.STR) + 20));")
+                .Save();
             // 修改技能描述文本，反映新的效果和机制
             // [已迁移到运行时覆写]             Msl.LoadAssemblyAsString("skills").MatchFrom("push.s \"War_Cry;Издаёт")
             // .ReplaceBy(ModFiles.GetCode("skills_rebalance_war_cry.asm")).Save();

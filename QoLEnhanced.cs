@@ -150,6 +150,7 @@ namespace QoLEnhanced
                     "gml_GlobalScript_table_skills_rebalance_residual_charge.asm",
                     "gml_GlobalScript_table_skills_rebalance_right_on_target.asm",
                     "gml_GlobalScript_table_skills_rebalance_riposte.asm",
+                    "gml_GlobalScript_table_skills_rebalance_runic_boulder.asm",
                     "gml_GlobalScript_table_skills_rebalance_seize_the_initiative.asm",
                     "gml_GlobalScript_table_skills_rebalance_self_repair.asm",
                     "gml_GlobalScript_table_skills_rebalance_sprint_training.asm",
@@ -320,6 +321,9 @@ namespace QoLEnhanced
             Msl.AddFunction(ModFiles.GetCode("_scr_call_method.gml"), "gml_GlobalScript__scr_call_method");
             // 敌人属性缩放
             Msl.AddFunction(ModFiles.GetCode("_scr_scale_enemy_csv_by_level.gml"), "gml_GlobalScript__scr_scale_enemy_csv_by_level");
+            // 近战专注判定。scr_atr_calc 会在玩家属性汇总阶段调用它来决定是否追加 Fortitude，
+            // 因此必须在 Block 11 的 scr_atr_calc 全量替换之前注册。
+            Msl.AddFunction(ModFiles.GetCode("_scr_qol_is_melee_focus.gml"), "gml_GlobalScript__scr_qol_is_melee_focus");
             // 武器前缀初始化
             Msl.AddFunction(ModFiles.GetCode("_scr_init_weapon_prefixes.gml"), "gml_GlobalScript__scr_init_weapon_prefixes");
             // 自动寻路系统
@@ -337,6 +341,15 @@ namespace QoLEnhanced
             Msl.AddFunction(ModFiles.GetCode("_scr_count_available_bolts.gml"), "gml_GlobalScript__scr_count_available_bolts");
             Msl.AddFunction(ModFiles.GetCode("_scr_get_weapon_hand_types.gml"), "gml_GlobalScript__scr_get_weapon_hand_types");
             Msl.AddFunction(ModFiles.GetCode("_scr_residual_charge_on_spell_hit.gml"), "gml_GlobalScript__scr_residual_charge_on_spell_hit");
+            // 符文巨石重做 helper。注册顺序按依赖拓扑排列：
+            // 1) 召唤吸引、合并伤害、上限结算都是底层效果；
+            // 2) try_merge 会调用合并伤害，所以放在合并伤害之后；
+            // 3) Alarm_1/Step 会调用 try_merge 和 apply_limit，所以这些 helper 必须先注册。
+            Msl.AddFunction(ModFiles.GetCode("_scr_qol_runic_boulder_apply_spawn_pull.gml"), "gml_GlobalScript__scr_qol_runic_boulder_apply_spawn_pull");
+            Msl.AddFunction(ModFiles.GetCode("_scr_qol_runic_boulder_merge_damage.gml"), "gml_GlobalScript__scr_qol_runic_boulder_merge_damage");
+            Msl.AddFunction(ModFiles.GetCode("_scr_qol_runic_boulder_get_merged_count.gml"), "gml_GlobalScript__scr_qol_runic_boulder_get_merged_count");
+            Msl.AddFunction(ModFiles.GetCode("_scr_qol_runic_boulder_apply_limit.gml"), "gml_GlobalScript__scr_qol_runic_boulder_apply_limit");
+            Msl.AddFunction(ModFiles.GetCode("_scr_qol_runic_boulder_try_merge.gml"), "gml_GlobalScript__scr_qol_runic_boulder_try_merge");
             Msl.AddFunction(ModFiles.GetCode("_scr_dghub_emit_player_damage.gml"), "gml_GlobalScript__scr_dghub_emit_player_damage");
             Msl.AddFunction(ModFiles.GetCode("_scr_qol_container_bonus_value.gml"), "gml_GlobalScript__scr_qol_container_bonus_value");
             Msl.AddFunction(ModFiles.GetCode("_scr_qol_container_bonus_is_bone.gml"), "gml_GlobalScript__scr_qol_container_bonus_is_bone");
