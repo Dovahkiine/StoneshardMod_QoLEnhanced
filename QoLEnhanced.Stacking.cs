@@ -18,15 +18,15 @@ namespace QoLEnhanced
 
             // [金币] 提升堆叠上限：100 -> 1000
             // 目的: 更方便地积累和转移货币
-            MslExtensions.QuickMatch("gml_Object_o_inv_gold_parent_Create_0", "stack_limit = 100", "stack_limit = 1000;");
+            Msl.LoadGML("gml_Object_o_inv_gold_parent_Create_0").MatchFrom("stack_limit = 100").ReplaceBy("stack_limit = 1000;").Save();
             Msl.LoadGML("gml_Object_o_inv_gold_parent_Create_0")
                .MatchBelow("event_inherited()", 1).ReplaceBy("stack_limit = 1000;")
                .Save();
             // [钱袋] 提升堆叠上限：2000 -> 20000
-            MslExtensions.QuickMatch("gml_Object_o_inv_moneybag_Create_0", "stack_limit = 2000", "stack_limit = 20000;");
+            Msl.LoadGML("gml_Object_o_inv_moneybag_Create_0").MatchFrom("stack_limit = 2000").ReplaceBy("stack_limit = 20000;").Save();
 
             // [古钱币] 提升堆叠上限：50 -> 1000
-            MslExtensions.QuickMatch("gml_Object_o_inv_old_coin_Create_0", "stack_limit = 50", "stack_limit = 1000;");
+            Msl.LoadGML("gml_Object_o_inv_old_coin_Create_0").MatchFrom("stack_limit = 50").ReplaceBy("stack_limit = 1000;").Save();
 
             #endregion
 
@@ -41,7 +41,7 @@ namespace QoLEnhanced
                 .Save();
 
             // [投石索] 提升投石索弹药堆叠上限：10 -> 100
-            MslExtensions.QuickMatch("gml_Object_o_inv_sling_ammo_parent_Create_0", "stack_limit = 10", "stack_limit = 100;");
+            Msl.LoadGML("gml_Object_o_inv_sling_ammo_parent_Create_0").MatchFrom("stack_limit = 10").ReplaceBy("stack_limit = 100;").Save();
 
             #endregion
 

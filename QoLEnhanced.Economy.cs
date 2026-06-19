@@ -20,7 +20,7 @@ namespace QoLEnhanced
             // 目的: 统一调整所有商人的定价逻辑，改善玩家经济压力
             Msl.LoadGML("gml_Object_o_NPC_Create_0").MatchBelow("Buying_Tier", 61).ReplaceBy(base.ModFiles, "gml_Object_o_NPC_Create_0_Price.gml").Save();
             // 所有商人的基础金币增加 1500 金
-            MslExtensions.QuickMatch("gml_GlobalScript_scr_npc_gold_init", "Gold_Amount_Base", "Gold_Amount_Base = [argument0 + 1500, argument1 + 1500];");
+            Msl.LoadGML("gml_GlobalScript_scr_npc_gold_init").MatchFrom("Gold_Amount_Base").ReplaceBy("Gold_Amount_Base = [argument0 + 1500, argument1 + 1500];").Save();
 
             #endregion
 
@@ -28,12 +28,12 @@ namespace QoLEnhanced
 
             // [大篷车随从] 修改大篷车随从备货和自持金币
             // 目的: 提升大篷车商人的经济吸引力
-            MslExtensions.QuickMatchAll("gml_Object_o_npc_darrel_caravan_Create_0", base.ModFiles, "gml_Object_o_npc_darrel_caravan_Create_0.gml");
+            Msl.LoadGML("gml_Object_o_npc_darrel_caravan_Create_0").MatchAll().ReplaceBy(base.ModFiles, "gml_Object_o_npc_darrel_caravan_Create_0.gml").Save();
 
-            MslExtensions.QuickMatch("gml_Object_o_skill_repair_item_master_Other_20", "if (_material_spec[i]", "if (_material_spec[i] == \"all\" || _material_spec[i] == _material)");
+            Msl.LoadGML("gml_Object_o_skill_repair_item_master_Other_20").MatchFrom("if (_material_spec[i]").ReplaceBy("if (_material_spec[i] == \"all\" || _material_spec[i] == _material)").Save();
 
             // [马车夫] 修改马车夫备货和自持金币
-            MslExtensions.QuickMatchAll("gml_Object_o_npc_tott_Create_0", base.ModFiles, "gml_Object_o_npc_tott_Create_0.gml");
+            Msl.LoadGML("gml_Object_o_npc_tott_Create_0").MatchAll().ReplaceBy(base.ModFiles, "gml_Object_o_npc_tott_Create_0.gml").Save();
 
             // [传送系统] 增加传送功能，允许从任意地点移动到马车点和地牢门口
             Msl.LoadGML("gml_Object_o_globalmap_Other_10").MatchFrom("event_perform(ev_step, ev_step_begin)").InsertAbove(@"

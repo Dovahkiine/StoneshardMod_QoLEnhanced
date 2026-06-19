@@ -36,9 +36,7 @@ namespace QoLEnhanced
 
             // [附魔条件] 限制附魔只对已识别的武器生效，且不能是诅咒装备
             // 目的: 防止玩家利用附魔规避限制
-            MslExtensions.QuickMatch("gml_Object_o_skill_enchantment_Other_20",
-                "if (owner.object_index",
-                "if (owner.object_index != o_trade_inventory && is_weapon && ds_map_find_value_ext(data, \"identified\", false) && !ds_map_find_value_ext(data, \"is_cursed\", true))");
+            Msl.LoadGML("gml_Object_o_skill_enchantment_Other_20").MatchFrom("if (owner.object_index").ReplaceBy("if (owner.object_index != o_trade_inventory && is_weapon && ds_map_find_value_ext(data, \"identified\", false) && !ds_map_find_value_ext(data, \"is_cursed\", true))").Save();
 
             #endregion
 
@@ -49,12 +47,12 @@ namespace QoLEnhanced
 
             // [品质背景] 为史诗品质 (Epic) 添加专属背景色
             // 目的: 提高稀有装备的视觉识别度
-            MslExtensions.QuickInsertBelow("gml_GlobalScript_scr_qualityBgDraw", "_colorTexture = make_color_rgb(34", @"
+            Msl.LoadGML("gml_GlobalScript_scr_qualityBgDraw").MatchFrom("_colorTexture = make_color_rgb(34").InsertBelow(@"
             break;
 
             case (4 << 0):
                 _colorBG = make_color_rgb(51, 40, 1);
-                _colorTexture = make_color_rgb(92, 67, 5);");
+                _colorTexture = make_color_rgb(92, 67, 5);").Save();
 
             #endregion
         }

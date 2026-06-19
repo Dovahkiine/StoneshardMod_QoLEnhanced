@@ -79,24 +79,21 @@ namespace QoLEnhanced
 
             // [等级上限] UI 面板修正：将经验条和等级显示的硬上限从 30 提升至 100
             // 目的: 支持更高的角色等级上限，提升长期游玩目标
-            MslExtensions.QuickMatch("gml_Object_o_character_panel_mask_Draw_0",
-                "var _maxLevel = scr_atr(\"LVL\") == 30",
-                "var _maxLevel = scr_atr(\"LVL\") == 100;");
+            Msl.LoadGML("gml_Object_o_character_panel_mask_Draw_0").MatchFrom("var _maxLevel = scr_atr(\"LVL\") == 30").ReplaceBy("var _maxLevel = scr_atr(\"LVL\") == 100;").Save();
 
             #endregion
 
             #region 1.4 宝箱奖励机制调整 (Chest Reward Mechanism Adjustments)
 
             // 保留原版首轮生成，只在首轮生成完成后追加奖励逻辑
-            MslExtensions.QuickInsertBelow("gml_Object_c_container_Other_13", "randomize()",
-            "_scr_qol_container_bonus(other.id, id, other.loot_script, other.loot_script_key, other.loot_script_tier);");
+            Msl.LoadGML("gml_Object_c_container_Other_13").MatchFrom("randomize()").InsertBelow("_scr_qol_container_bonus(other.id, id, other.loot_script, other.loot_script_key, other.loot_script_tier);").Save();
 
             #endregion
 
             #region 1.5 全局初始化与玩家核心逻辑 (Global Init & Player Core)
 
             // [初始化] 在游戏初始化时重置所有全局变量，确保每次新游戏或加载都能正确应用新的游戏机制
-            MslExtensions.QuickInsertBelow("gml_GlobalScript_scr_sessionDataInit", "audio_sound_gain", @"
+            Msl.LoadGML("gml_GlobalScript_scr_sessionDataInit").MatchFrom("audio_sound_gain").InsertBelow(@"
             _scr_init_weapon_prefixes();
             global.chain_lightning_count = 0;   // 重置连锁闪电计数
             global.enemy_balance_by_LVL = -1;   // 重置等级缩放缓存
@@ -109,7 +106,7 @@ namespace QoLEnhanced
             if (!variable_global_exists(""agility_chain_turn""))
                 global.agility_chain_turn = 0;  // 连动敌方回合进度槽：<1 继续玩家回合，>=1 放行一次敌方回合
             _scr_scale_enemy_csv_by_level();
-            ");
+            ").Save();
 
             // [DGHub MVP] 玩家实际掉血后追加一条本地事件，供外部桥接插件读取
             Msl.LoadGML("gml_GlobalScript_scr_simple_damage")

@@ -35,9 +35,9 @@ namespace QoLEnhanced
             };
             foreach (var gmlName in wildHuntChecks)
             {
-                MslExtensions.QuickMatch(gmlName, "var _wildhunt_modifier", "var _wildhunt_modifier = floor(scr_atr(\"LVL\") * 0.6);");
+                Msl.LoadGML(gmlName).MatchFrom("var _wildhunt_modifier").ReplaceBy("var _wildhunt_modifier = floor(scr_atr(\"LVL\") * 0.6);").Save();
 
-                MslExtensions.QuickMatchBelow(gmlName, "var _wildhunt_modifier", 2, "");
+                Msl.LoadGML(gmlName).MatchBelow("var _wildhunt_modifier", 2).ReplaceBy("").Save();
             } */
             Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_scr_fatigue_check.gml"), "gml_GlobalScript_scr_fatigue_check");
             Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_scr_hungercheck.gml"), "gml_GlobalScript_scr_hungercheck");
@@ -61,7 +61,7 @@ namespace QoLEnhanced
             ";
             foreach (var character in starterChars)
             {
-                MslExtensions.QuickInsertBelow(character, "scr_inventory_add_item(o_inv_map_osbrook)", hildaTrinketGML);
+                Msl.LoadGML(character).MatchFrom("scr_inventory_add_item(o_inv_map_osbrook)").InsertBelow(hildaTrinketGML).Save();
             } */
             Msl.LoadGML("gml_Object_o_player_Create_0").MatchAll().InsertBelow(@"
             with (o_inventory)
@@ -97,7 +97,7 @@ namespace QoLEnhanced
 
             // [开局 DLC 物品] 启用开局获得 DLC 物品
             // 目的: 所有玩家都能体验完整的装备选择
-            MslExtensions.QuickMatch("gml_Object_o_player_chest_Alarm_1", "if (scr_user_owns", "");
+            Msl.LoadGML("gml_Object_o_player_chest_Alarm_1").MatchFrom("if (scr_user_owns").ReplaceBy("").Save();
             LogPatchTiming("Block 04.2 Starter equipment");
 
             #endregion
@@ -123,12 +123,12 @@ namespace QoLEnhanced
             // [约娜天赋] 为约娜的天赋添加全新的法术暴击斩杀赋予额外回合的效果
             // 利用原版的 scr_crit_death → is_crit_magic_death 统计链路，
             // 在暴击法术击杀时设置全局标记，由 scr_allturn 检查并授予免费回合
-            MslExtensions.QuickInsertBelow("gml_GlobalScript_scr_crit_death", "is_crit_magic_death = true", @"
+            Msl.LoadGML("gml_GlobalScript_scr_crit_death").MatchFrom("is_crit_magic_death = true").InsertBelow(@"
             if (is_crit_magic_death && !global.wizzard_turn && instance_is(argument0, o_runaway_wizzard))
             {
                 global.got_free_turn++;
                 global.wizzard_turn = true;
-            }");
+            }").Save();
             // 修改天赋描述文本，反映新的效果和机制
             // [已迁移到运行时覆写]             Msl.LoadAssemblyAsString("skills").MatchFrom("push.s \"magical_erudition;Даёт")
             // .ReplaceBy(ModFiles.GetCode("skills_rebalance_magical_erudition.asm")).Save();

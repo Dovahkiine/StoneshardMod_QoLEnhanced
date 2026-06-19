@@ -83,16 +83,16 @@ namespace QoLEnhanced
 
             // [连锁闪电] 强化技能伤害和弹射次数，不再限定弹射目标条件，移除目标过滤逻辑
             Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_chain_lightning_Other_10.gml"), "gml_Object_o_chain_lightning_Other_10");
-            MslExtensions.QuickMatch("gml_Object_o_chain_lightning_Collision_o_unit", "if (point_distance", "if (point_distance(x, y, target_x, target_y) < 24)");
+            Msl.LoadGML("gml_Object_o_chain_lightning_Collision_o_unit").MatchFrom("if (point_distance").ReplaceBy("if (point_distance(x, y, target_x, target_y) < 24)").Save();
             Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_skill_chain_lightning_Other_17.gml"), "gml_Object_o_skill_chain_lightning_Other_17");
             LogPatchTiming("Block 05.2 Chain lightning");
 
 
             // [残余电荷] 减抗数值加强，增加暴击时的额外效果
-            MslExtensions.QuickMatch("gml_Object_o_b_residual_charge_Create_0", "max_duration", "max_duration = 12;");
+            Msl.LoadGML("gml_Object_o_b_residual_charge_Create_0").MatchFrom("max_duration").ReplaceBy("max_duration = 12;").Save();
             // 改为创建12回合的残余电荷效果。
-            MslExtensions.QuickMatch("gml_Object_o_pass_skill_residual_charge_Other_13", "scr_effect_create", "scr_effect_create(o_b_residual_charge, 12, owner, owner);");
-            MslExtensions.QuickMatchFromUntil("gml_Object_o_pass_skill_residual_charge_Other_15", "_count = min", "scr_temp_incr_atr", @"
+            Msl.LoadGML("gml_Object_o_pass_skill_residual_charge_Other_13").MatchFrom("scr_effect_create").ReplaceBy("scr_effect_create(o_b_residual_charge, 12, owner, owner);").Save();
+            Msl.LoadGML("gml_Object_o_pass_skill_residual_charge_Other_15").MatchFromUntil("_count = min", "scr_temp_incr_atr").ReplaceBy(@"
             if (is_player(owner))
             {
                 _count = (_count + (owner.WIL + owner.Electromantic_Power + owner.Magic_Power) / 50) * (0.5 + owner.WIL * 0.01);
@@ -103,9 +103,9 @@ namespace QoLEnhanced
             {
                 _count = min(_count, 6);
                 scr_temp_incr_atr(""Shock_Resistance"", -0.5 * _count, 12, target, target);
-            }");
+            }").Save();
             Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_pass_skill_residual_charge_Other_17.gml"), "gml_Object_o_pass_skill_residual_charge_Other_17");
-            MslExtensions.QuickMatch("gml_Object_o_lighting_Create_0", "scr_temp_effect_update(object_index, owner, \"Electromantic_Power\", 10, 1200, 1)", "scr_temp_effect_update(object_index, owner, \"Electromantic_Power\", 25, 2400, 1);");
+            Msl.LoadGML("gml_Object_o_lighting_Create_0").MatchFrom("scr_temp_effect_update(object_index, owner, \"Electromantic_Power\", 10, 1200, 1)").ReplaceBy("scr_temp_effect_update(object_index, owner, \"Electromantic_Power\", 25, 2400, 1);").Save();
             LogPatchTiming("Block 05.2 Residual charge");
 
 
@@ -156,7 +156,7 @@ namespace QoLEnhanced
             // [战吼] 增加战吼范围，减少精力消耗与CD，改为稳定触发控制效果，持续12回合，延续激昂持续时间
             // 改变: 范围 12->15, 精力消耗降低, CD减少, 控制效果稳定触发
             // table_skills_stats 已在 PatchMod 主函数的表格替换区统一处理
-            MslExtensions.QuickMatch("gml_Object_o_war_cry_birth_Other_10", "var _range", "var _range = 15;");
+            Msl.LoadGML("gml_Object_o_war_cry_birth_Other_10").MatchFrom("var _range").ReplaceBy("var _range = 15;").Save();
             Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_war_cry_impact_Other_11.gml"), "gml_Object_o_war_cry_impact_Other_11");
             // [猛踹] 降低对格挡条的单次压制。
             // 原版实际扣除位置在 o_power_kick_Alarm_0：
@@ -190,13 +190,13 @@ namespace QoLEnhanced
             // [正中目标] 现在无论任何配装均可触发正中目标效果，增加命中率，减少失手几率，增加暴击率
             // 改进: 命中率 +8, 失手率 -8, 暴击率 +5
             Msl.SetStringGMLInFile(ModFiles.GetCode("gml_Object_o_pass_skill_right_on_target_Other_17.gml"), "gml_Object_o_pass_skill_right_on_target_Other_17");
-            MslExtensions.QuickMatchBelow("gml_GlobalScript_scr_skill_right_on_target", "if (argument0 == 1)", 5, @"
+            Msl.LoadGML("gml_GlobalScript_scr_skill_right_on_target").MatchBelow("if (argument0 == 1)", 5).ReplaceBy(@"
             {
             Hit_Chance += 8;
             FMB -= 8;
             CRT += 5;
             }
-            ");
+            ").Save();
             // 修改技能描述文本，反映新的效果和机制
             // [已迁移到运行时覆写]             Msl.LoadAssemblyAsString("skills").MatchFrom("push.s \"right_on_target;Даёт")
             // .ReplaceBy(ModFiles.GetCode("skills_rebalance_right_on_target.asm")).Save();
@@ -204,35 +204,35 @@ namespace QoLEnhanced
 
             // [准备就绪] 增加可叠加层数，增加命中率和伤害吸收率，减少能力消耗
             // 改进: 命中率 +8, 伤害减免 -8%, 能力消耗 -8%
-            MslExtensions.QuickMatchFromUntil("gml_Object_o_pass_skill_preparation_Other_13", "Hit_Chance", "Abilities_Energy_Cost", @"
+            Msl.LoadGML("gml_Object_o_pass_skill_preparation_Other_13").MatchFromUntil("Hit_Chance", "Abilities_Energy_Cost").ReplaceBy(@"
             scr_temp_effect_update(object_index, owner, ""Hit_Chance"", 8, 6, 3);
             scr_temp_effect_update(object_index, owner, ""Damage_Received"", -5, 6, 3);
-            scr_temp_effect_update(object_index, owner, ""Abilities_Energy_Cost"", -8, 6, 3);");
+            scr_temp_effect_update(object_index, owner, ""Abilities_Energy_Cost"", -8, 6, 3);").Save();
             // 修改技能描述文本，反映新的效果和机制
             // [已迁移到运行时覆写]             Msl.LoadAssemblyAsString("skills").MatchFrom("push.s \"preparation;Пропуск")
             // .ReplaceBy(ModFiles.GetCode("skills_rebalance_preparation.asm")).Save();
 
 
             // [自修自缮] 装备耐久损耗速度变为40%，放宽装备属性加成阈值判定
-            MslExtensions.QuickMatch("gml_Object_o_pass_skill_self_repair_Other_17", "ds_map_replace(data", @"
+            Msl.LoadGML("gml_Object_o_pass_skill_self_repair_Other_17").MatchFrom("ds_map_replace(data").ReplaceBy(@"
             var _durability_resistance = clamp(0.4 + (owner.Vitality * 0.02), 0.6, 1.0);
             ds_map_replace(data, ""Duration_Resistance"", _durability_resistance);
-            ds_map_replace(text_map, ""Duration_Resistance"", math_round(_durability_resistance * 100));");
-            MslExtensions.QuickMatch("gml_Object_o_pass_skill_self_repair_Other_17", "if (_duration >= ", "if (_duration >= (_maxDuration * 0.7))");
+            ds_map_replace(text_map, ""Duration_Resistance"", math_round(_durability_resistance * 100));").Save();
+            Msl.LoadGML("gml_Object_o_pass_skill_self_repair_Other_17").MatchFrom("if (_duration >= ").ReplaceBy("if (_duration >= (_maxDuration * 0.7))").Save();
             // 修改技能描述文本，反映新的效果和机制
             // [已迁移到运行时覆写]             Msl.LoadAssemblyAsString("skills").MatchFrom("push.s \"self_repair;Даё")
             // .ReplaceBy(ModFiles.GetCode("skills_rebalance_self_repair.asm")).Save();
 
 
             // [远近兼攻] 获得的瞄准状态增加至3回合；添加弹药被射出时有50%概率不消耗直接复填
-            MslExtensions.QuickMatchBelow("gml_Object_o_pass_skill_thrift_Other_13", "if (scr_is_ammo_exist() || scr_crossbow_is_armed())", 1, "scr_effect_create(o_b_taking_aim, 3);");
+            Msl.LoadGML("gml_Object_o_pass_skill_thrift_Other_13").MatchBelow("if (scr_is_ammo_exist() || scr_crossbow_is_armed())", 1).ReplaceBy("scr_effect_create(o_b_taking_aim, 3);").Save();
             // 修改技能描述文本，反映新的效果和机制
             // [已迁移到运行时覆写]             Msl.LoadAssemblyAsString("skills").MatchFrom("push.s \"thrift;Уби")
             // .ReplaceBy(ModFiles.GetCode("skills_rebalance_thrift.asm")).Save();
 
 
             // [冲刺训练] 所有突进技能距离改为增加2
-            MslExtensions.QuickMatch("gml_Object_o_pass_skill_sprint_training_Other_18", "Special_Bonus_Range", "Special_Bonus_Range += 2;");
+            Msl.LoadGML("gml_Object_o_pass_skill_sprint_training_Other_18").MatchFrom("Special_Bonus_Range").ReplaceBy("Special_Bonus_Range += 2;").Save();
             // 修改技能描述文本，反映新的效果和机制
             // [已迁移到运行时覆写]             Msl.LoadAssemblyAsString("skills").MatchFrom("push.s \"sprint_training;Даёт")
             // .ReplaceBy(ModFiles.GetCode("skills_rebalance_sprint_training.asm")).Save();
@@ -326,7 +326,7 @@ namespace QoLEnhanced
             // [已迁移到运行时覆写]             Msl.LoadAssemblyAsString("skills").MatchFrom("push.s \"Taking_Aim;Акт")
             // .ReplaceBy(ModFiles.GetCode("skills_rebalance_taking_aim.asm")).Save();
             //瞄准最大持续时间改为24回合
-            MslExtensions.QuickMatch("gml_Object_o_b_taking_aim_Create_0", "max_duration", "max_duration = 9;");
+            Msl.LoadGML("gml_Object_o_b_taking_aim_Create_0").MatchFrom("max_duration").ReplaceBy("max_duration = 9;").Save();
             LogPatchTiming("Block 05.8 taking aim");
             // [手持兵器] 移除双手兵器的持握限制
             // 目的: 允许单手使用双手武器，增加配装灵活性
@@ -337,7 +337,7 @@ namespace QoLEnhanced
             Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_scr_playerSpriteUpdate.gml"), "gml_GlobalScript_scr_playerSpriteUpdate");
             Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_scr_playerSpritePartsUpdate.gml"), "gml_GlobalScript_scr_playerSpritePartsUpdate");
             //单独改动铲子为双持，保持一致性
-            MslExtensions.QuickMatch("gml_Object_o_inv_shovel_Create_0", "hands = 2", "hands = 1;");
+            Msl.LoadGML("gml_Object_o_inv_shovel_Create_0").MatchFrom("hands = 2").ReplaceBy("hands = 1;").Save();
             LogPatchTiming("Block 05.8 weapon hands");
 
             // [双持平衡] 移除双持时的重度主手/副手惩罚，并优化冷却缩减、失手率等收益
@@ -360,9 +360,8 @@ namespace QoLEnhanced
 
             // [剥皮强化] 拥有"猎人大师"技能时，剥皮成功率提升至 100%，并增加皮革耐久
             // 目的: 经济系统更多选择，鼓励专门化培养
-            MslExtensions.QuickMatch("gml_Object_o_flaying_Other_10", "if ((_resorcefullness",
-            "if ((_resorcefullness && scr_chance_value(Pelt_Durability)) || (_is_hunting_secret && scr_chance_value(100)) || (_is_hunters_grit && scr_chance_value(scr_atr(\"Hunter's Grit\"))))");
-            MslExtensions.QuickMatch("gml_Object_o_flaying_Other_10", "Pelt_Durability +=", "Pelt_Durability += 100");
+            Msl.LoadGML("gml_Object_o_flaying_Other_10").MatchFrom("if ((_resorcefullness").ReplaceBy("if ((_resorcefullness && scr_chance_value(Pelt_Durability)) || (_is_hunting_secret && scr_chance_value(100)) || (_is_hunters_grit && scr_chance_value(scr_atr(\"Hunter's Grit\"))))").Save();
+            Msl.LoadGML("gml_Object_o_flaying_Other_10").MatchFrom("Pelt_Durability +=").ReplaceBy("Pelt_Durability += 100").Save();
 
             // [升级系统] 已在自动寻路处修改。修改玩家步进事件：解锁等级上限 (100)、替换阶段性经验曲线、将每级 AP 奖励提升至 3，SP 提升至 2
             // 目的: 延长游戏终局内容，增加角色养成深度

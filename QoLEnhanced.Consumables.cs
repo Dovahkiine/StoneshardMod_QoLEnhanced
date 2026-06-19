@@ -25,39 +25,39 @@ namespace QoLEnhanced
 
             // [维修工具] 强化：将可用次数从 5 次提升至 15 次
             // 效果: 玩家可以更多次地维修装备
-            MslExtensions.QuickMatch("gml_Object_o_inv_repkit_Create_0", "charge = 5", "charge = 15;");
+            Msl.LoadGML("gml_Object_o_inv_repkit_Create_0").MatchFrom("charge = 5").ReplaceBy("charge = 15;").Save();
 
             #endregion
 
             #region 7.2 医疗与应急物品 (Medical & Emergency Items)
 
             // [药膏] 强化：将初始次数从 3 次提升至 8 次
-            MslExtensions.QuickMatch("gml_Object_o_inv_salve_Create_0", "charge = 3", "charge = 8;");
+            Msl.LoadGML("gml_Object_o_inv_salve_Create_0").MatchFrom("charge = 3").ReplaceBy("charge = 8;").Save();
 
             // [绷带] 强化：将初始次数从 2 次提升至 8 次
-            MslExtensions.QuickMatch("gml_Object_o_inv_bandage_Create_0", "charge = 2", "charge = 8;");
+            Msl.LoadGML("gml_Object_o_inv_bandage_Create_0").MatchFrom("charge = 2").ReplaceBy("charge = 8;").Save();
 
             // [夹板] 强化：将初始次数从 1 次提升至 3 次，添加max_charge属性
-            MslExtensions.QuickMatch("gml_Object_o_inv_splint_Create_0", "charge = 1", @"
+            Msl.LoadGML("gml_Object_o_inv_splint_Create_0").MatchFrom("charge = 1").ReplaceBy(@"
             charge = 3;
             max_charge = charge;
-            ");
+            ").Save();
 
             // [灵药] 强化：初始次数从 1 次提升至 8 次
-            MslExtensions.QuickMatch("gml_Object_o_inv_aqua_vitae_Create_0", "charge = 1", @"
+            Msl.LoadGML("gml_Object_o_inv_aqua_vitae_Create_0").MatchFrom("charge = 1").ReplaceBy(@"
             charge = 8;
             max_charge = charge;
-            ");
+            ").Save();
 
             #endregion
 
             #region 7.3 容器与储存 (Containers & Storage)
 
             // [水囊] 强化：初始可用次数提升至 20 次
-            MslExtensions.QuickMatch("gml_Object_o_inv_wineskin_Create_0", "charge = 6", "charge = 20;");
+            Msl.LoadGML("gml_Object_o_inv_wineskin_Create_0").MatchFrom("charge = 6").ReplaceBy("charge = 20;").Save();
 
             // [涤魂圣杯] 强化：可用次数提升至 20 次
-            MslExtensions.QuickMatch("gml_Object_o_inv_cleansing_goblet_water_Create_0", "charge = 1", "charge = 20;");
+            Msl.LoadGML("gml_Object_o_inv_cleansing_goblet_water_Create_0").MatchFrom("charge = 1").ReplaceBy("charge = 20;").Save();
 
             #endregion
 
@@ -65,13 +65,11 @@ namespace QoLEnhanced
 
             // [卷轴系统] 批量重构：使辨识、附魔、褪魔卷轴均支持 8 次使用，并开启次数显示
             // 目的: 增加卷轴的实用性，提升游戏后期的可行策略
-            MslExtensions.QuickMatch("gml_Object_o_inv_scroll_parent_Create_0",
-            "identified = true",
-            @"
+            Msl.LoadGML("gml_Object_o_inv_scroll_parent_Create_0").MatchFrom("identified = true").ReplaceBy(@"
             identified = true;
             charge = 8;
             max_charge = 8;
-            draw_charges = true;");
+            draw_charges = true;").Save();
 
             #endregion
 
@@ -79,21 +77,15 @@ namespace QoLEnhanced
 
             // [保鲜增强] 提升加盐保鲜效果：将 Fresh 值乘数从原版提升至 1000 倍
             // 原值: 2x | 新值: 1000x | 目的: 降低食物管理压力
-            MslExtensions.QuickMatch("gml_GlobalScript_scr_consum_char_add",
-                "ds_map_set(data, \"Fresh\"",
-                "ds_map_set(data, \"Fresh\", (_value * 1000))");
-            MslExtensions.QuickMatch("gml_Object_o_hoverConsum_Other_20",
-            "var _middleTextCharacter",
-            "var _middleTextCharacter = ds_map_find_value_ext(global.consum_mid, idName + \"_hilda\", \"N/A\");"); //骨器文本内容描述修正
-            MslExtensions.QuickMatch("gml_Object_o_hoverConsum_Other_20",
-                "_fresh *=",
-                "_fresh *= 1000");
+            Msl.LoadGML("gml_GlobalScript_scr_consum_char_add").MatchFrom("ds_map_set(data, \"Fresh\"").ReplaceBy("ds_map_set(data, \"Fresh\", (_value * 1000))").Save();
+            Msl.LoadGML("gml_Object_o_hoverConsum_Other_20").MatchFrom("var _middleTextCharacter").ReplaceBy("var _middleTextCharacter = ds_map_find_value_ext(global.consum_mid, idName + \"_hilda\", \"N/A\");").Save(); //骨器文本内容描述修正
+            Msl.LoadGML("gml_Object_o_hoverConsum_Other_20").MatchFrom("_fresh *=").ReplaceBy("_fresh *= 1000").Save();
 
             // [大篷车保鲜] 如果马车开启了香料升级，使马车仓库内的食物腐败速度大幅降低 (0.005x)
             // 目的: 鼓励投资大篷车升级，建立长期资源积累系统
             Msl.SetStringGMLInFile(ModFiles.GetCode("gml_GlobalScript_scr_consum_food_change.gml"), "gml_GlobalScript_scr_consum_food_change");
 
-            MslExtensions.QuickMatchFromUntil("gml_Object_o_hoverConsum_Other_20", "var _freshValue", "other.freshColor", @"
+            Msl.LoadGML("gml_Object_o_hoverConsum_Other_20").MatchFromUntil("var _freshValue", "other.freshColor").ReplaceBy(@"
             if (_fresh > 24)
             {
                 // 原版逻辑：显示天数
@@ -117,7 +109,7 @@ namespace QoLEnhanced
                 other.freshRight = ds_list_find_value(global.other_hover, 84);
                 other.freshColor = make_colour_rgb(202, 31, 55);
             }
-            ");
+            ").Save();
 
             #endregion
         }

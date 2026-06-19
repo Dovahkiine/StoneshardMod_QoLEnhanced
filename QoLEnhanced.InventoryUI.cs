@@ -23,7 +23,7 @@ namespace QoLEnhanced
 
             for (int i = 0; i < o_trade_inventory_Create_0.Length; i++)
             {
-                MslExtensions.QuickMatch("gml_Object_o_trade_inventory_Create_0", o_trade_inventory_Create_0[i], o_trade_inventory_Replace_0[i]);
+                Msl.LoadGML("gml_Object_o_trade_inventory_Create_0").MatchFrom(o_trade_inventory_Create_0[i]).ReplaceBy(o_trade_inventory_Replace_0[i]).Save();
             }
 
             // [仓库界面扩容] 调整仓库界面尺寸参数
@@ -32,7 +32,7 @@ namespace QoLEnhanced
 
             for (int i = 0; i < o_stash_inventory_Create_0.Length; i++)
             {
-                MslExtensions.QuickMatch("gml_Object_o_stash_inventory_Create_0", o_stash_inventory_Create_0[i], o_stash_inventory_Replace_0[i]);
+                Msl.LoadGML("gml_Object_o_stash_inventory_Create_0").MatchFrom(o_stash_inventory_Create_0[i]).ReplaceBy(o_stash_inventory_Replace_0[i]).Save();
             }
 
             #endregion
@@ -41,15 +41,13 @@ namespace QoLEnhanced
 
             // [背包扩容] 根据分辨率自适应容器容量
             // 540p (1920x1080): 10列7行 / 720p (2560x1440): 12列11行
-            MslExtensions.QuickMatchFromUntil("gml_Object_o_inventory_Create_0",
-            "itemsContainer = scr_guiCreateContainer(id,",
-            "scr_inventory_container_cells_add(id, cellsContainer, 5)", @"
+            Msl.LoadGML("gml_Object_o_inventory_Create_0").MatchFromUntil("itemsContainer = scr_guiCreateContainer(id,", "scr_inventory_container_cells_add(id, cellsContainer, 5)").ReplaceBy(@"
             var _inv_cols = (global.cameraHeight >= 720) ? 12 : 10
             var _inv_rows = (global.cameraHeight >= 720) ? 11 : 7
             var _offsetX = (global.cameraHeight >= 720) ? (47 - adaptiveOffsetX) : adaptiveOffsetX
             itemsContainer = scr_guiCreateContainer(id, o_guiContainerEmpty, depth, _offsetX, (adaptiveOffsetY + 151))
             cellsContainer = scr_inventory_container_create(itemsContainer, _inv_cols)
-            scr_inventory_container_cells_add(id, cellsContainer, _inv_rows)");
+            scr_inventory_container_cells_add(id, cellsContainer, _inv_rows)").Save();
 
             // [UI 贴图] 运行时根据 global.cameraHeight 自动选择对应分辨率的精灵
             // 540p (cameraHeight=540): _540_rusty 系列 | 720p (cameraHeight=720): _720 系列
