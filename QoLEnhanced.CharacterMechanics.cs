@@ -48,21 +48,6 @@ namespace QoLEnhanced
             LogPatchTiming("Block 04.1 Wild Hunt");
 
             // [全角色开局饰品] 为所有初始角色增加"希尔达的饰品 (Hilda's Trinket)"
-            /* string[] starterChars = {
-                "gml_Object_o_knight_maiden_Create_0", "gml_Object_o_runaway_wizzard_Create_0",
-                "gml_Object_o_reaver_Create_0", "gml_Object_o_revenger_Create_0",
-                "gml_Object_o_woodward_Create_0", "gml_Object_o_agemon_Create_0",
-                "gml_Object_o_dervish_Create_0"
-            };
-            string hildaTrinketGML = @"
-                scr_inventory_add_item(o_inv_hilda_trinket);
-                var _list = scr_atr(""recipesConsumsOpened"");
-                ds_list_add(_list, ""hilda_trinket"");
-            ";
-            foreach (var character in starterChars)
-            {
-                Msl.LoadGML(character).MatchFrom("scr_inventory_add_item(o_inv_map_osbrook)").InsertBelow(hildaTrinketGML).Save();
-            } */
             Msl.LoadGML("gml_Object_o_player_Create_0").MatchAll().InsertBelow(@"
             with (o_inventory)
             {
